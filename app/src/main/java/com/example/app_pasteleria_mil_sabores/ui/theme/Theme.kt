@@ -1,58 +1,34 @@
 package com.example.app_pasteleria_mil_sabores.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Color(0xFF8B4513),        // chocolate
+    onPrimary = Color(0xFFFFFFFF),      // blanco
+    primaryContainer = Color(0xFFFFC0CB), // rosa
+    onPrimaryContainer = Color(0xFF5D4037), // marrón texto
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = Color(0xFF8B4513),      // chocolate
+    onSecondary = Color(0xFFFFFFFF),    // blanco
+    secondaryContainer = Color(0xFFFFC0CB), // rosa
+    onSecondaryContainer = Color(0xFF5D4037), // marrón texto
+
+    surface = Color(0xFFFFF5E1),        // crema
+    onSurface = Color(0xFF5D4037),      // marrón texto
+    background = Color(0xFFFFF5E1),     // crema
+    onBackground = Color(0xFF5D4037),   // marrón texto
 )
 
 @Composable
-fun ApppasteleriamilsaboresTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+fun AppPasteleriaMilSaboresTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
+        colorScheme = LightColorScheme,
+        typography = PasteleriaTypography,
         content = content
     )
 }
