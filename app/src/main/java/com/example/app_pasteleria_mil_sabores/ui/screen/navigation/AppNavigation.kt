@@ -11,13 +11,17 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.auth.LoginScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.RegistroScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.ClienteHomeScreen
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 enum class Pantallas {
     LOGIN, REGISTRO, PRINCIPAL
 }
 
 @Composable
-fun AppNavigation(viewModel: FormularioViewModel) {
+fun AppNavigation(
+    viewModel: FormularioViewModel,
+    productoViewModel: ProductoViewModel
+) {
     var pantallaActual by remember { mutableStateOf(Pantallas.LOGIN) }
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
 
@@ -49,6 +53,7 @@ fun AppNavigation(viewModel: FormularioViewModel) {
                     "Administrador" -> AdminHomeScreen(
                         usuario = usuario,
                         viewModel = viewModel,
+                        productoViewModel = productoViewModel,
                         onCerrarSesion = {
                             usuarioLogueado = null
                             pantallaActual = Pantallas.LOGIN
@@ -58,15 +63,19 @@ fun AppNavigation(viewModel: FormularioViewModel) {
                     else -> ClienteHomeScreen(
                         usuario = usuario,
                         viewModel = viewModel,
+                        productoViewModel = productoViewModel,
                         onCerrarSesion = {
                             usuarioLogueado = null
                             pantallaActual = Pantallas.LOGIN
                             viewModel.cerrarSesion()
-                        }
+                        },
+                        onVerPerfil = { /* Navegar a perfil */ },
+                        onVerCarrito = { /* Navegar a carrito */ },
+                        onVerPedidos = { /* Navegar a pedidos */ },
+                        onVerSoporte = { /* Navegar a soporte */ }
                     )
                 }
             } ?: run {
-                // Si por alguna razón no hay usuario logueado, volver al login
                 pantallaActual = Pantallas.LOGIN
             }
         }

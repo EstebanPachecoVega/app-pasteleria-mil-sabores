@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 @Composable
 fun AdminHomeScreen(
     usuario: Usuario,
     viewModel: FormularioViewModel,
+    productoViewModel: ProductoViewModel,
     onCerrarSesion: () -> Unit
 ) {
     val usuariosState = viewModel.usuarios.collectAsState()

@@ -10,11 +10,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.room.Room
-import com.example.app_pasteleria_mil_sabores.data.UsuarioDatabase
+import com.example.app_pasteleria_mil_sabores.data.PasteleriaDatabase
+import com.example.app_pasteleria_mil_sabores.data.ProductoRepository
 import com.example.app_pasteleria_mil_sabores.ui.screen.navigation.AppNavigation
 import com.example.app_pasteleria_mil_sabores.ui.screen.splash.SplashScreen
 import com.example.app_pasteleria_mil_sabores.ui.theme.AppPasteleriaMilSaboresTheme
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,19 +31,28 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun FormularioApp() {
+fun FormularioApp(){
     val context = LocalContext.current
 
     val database = remember {
         Room.databaseBuilder(
             context,
-            UsuarioDatabase::class.java,
-            "usuario.db"
-        ).build()
+            PasteleriaDatabase::class.java,
+            "pasteleria.db"
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
-    val viewModel = remember {
+    val productoRepository = remember {
+        ProductoRepository(database.productoDao())
+    }
+
+    val usuarioViewModel = remember {
         FormularioViewModel(database.usuarioDao())
+    }
+
+    val productoViewModel = remember {
+        ProductoViewModel(productoRepository)
     }
 
     val showSplash = remember { mutableStateOf(true) }
@@ -51,14 +62,9 @@ fun FormularioApp() {
             onSplashComplete = { showSplash.value = false }
         )
     } else {
-        AppNavigation(viewModel = viewModel)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AppPasteleriaMilSaboresTheme {
-        FormularioApp()
+        AppNavigation(
+            viewModel = usuarioViewModel,
+            productoViewModel = productoViewModel
+        )
     }
 }
