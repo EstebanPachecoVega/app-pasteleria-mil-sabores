@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,11 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
+import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
@@ -153,24 +157,22 @@ fun ClienteHomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductoCard(producto: Producto) {
+    val imageResource = rememberImageResource(producto.imagen)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        ),
-        onClick = {
-            // Aquí puedes agregar la navegación a los detalles del producto
-            // onClick agregado para usar la API experimental de Card
-        }
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Imagen del producto
+            // Imagen del producto - Ahora usa la imagen real
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -180,14 +182,24 @@ fun ProductoCard(producto: Producto) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                // Si tienes las imágenes en drawable, usa painterResource
-                // Si no, puedes usar un placeholder
-                Icon(
-                    painter = painterResource(android.R.drawable.ic_menu_gallery), // Placeholder
-                    contentDescription = producto.nombre,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (imageResource != 0) {
+                    Image(
+                        painter = painterResource(id = imageResource),
+                        contentDescription = producto.nombre,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(MaterialTheme.shapes.medium),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Fallback si la imagen no existe
+                    Icon(
+                        painter = painterResource(android.R.drawable.ic_menu_gallery),
+                        contentDescription = "Imagen no disponible",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -221,10 +233,7 @@ fun ProductoCard(producto: Producto) {
 
             // Botón de agregar al carrito
             IconButton(
-                onClick = {
-                    // Agregar al carrito - implementar esta funcionalidad
-                    // productoViewModel.agregarAlCarrito(producto)
-                },
+                onClick = { /* Agregar al carrito */ },
                 modifier = Modifier.align(Alignment.CenterVertically)
             ) {
                 Icon(

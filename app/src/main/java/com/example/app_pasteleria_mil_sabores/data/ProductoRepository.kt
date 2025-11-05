@@ -23,7 +23,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Mousse de Chocolate",
                 descripcion = "Postre individual cremoso y suave, hecho con chocolate de alta calidad, ideal para los amantes del chocolate.",
                 precio = 5000,
-                imagen = "mousse_chocolate",
+                imagen = "mousse_de_chocolate",
                 categoria = "individuales",
                 stock = 15,
                 destacado = true
@@ -45,7 +45,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Sin Azúcar de Naranja",
                 descripcion = "Torta ligera y deliciosa, endulzada naturalmente, ideal para quienes buscan opciones más saludables.",
                 precio = 48000,
-                imagen = "torta_naranja_sin_azucar",
+                imagen = "torta_sin_azucar_de_naranja",
                 categoria = "sin_azucar",
                 stock = 8,
                 destacado = true
@@ -89,7 +89,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Vegana de Chocolate",
                 descripcion = "Torta de chocolate húmeda y deliciosa, hecha sin productos de origen animal, perfecta para veganos.",
                 precio = 50000,
-                imagen = "torta_vegana_chocolate",
+                imagen = "torta_vegana_de_chocolate",
                 categoria = "veganos",
                 stock = 5,
                 destacado = true
@@ -99,7 +99,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Galletas Veganas de Avena",
                 descripcion = "Crujientes y sabrosas, estas galletas son una excelente opción para un snack saludable y vegano.",
                 precio = 4500,
-                imagen = "galletas_veganas_avena",
+                imagen = "galletas_veganas_de_avena",
                 categoria = "veganos",
                 stock = 30,
                 destacado = false
@@ -111,7 +111,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Circular de Vainilla",
                 descripcion = "Bizcocho de vainilla clásico relleno con crema pastelera y cubierto con un glaseado dulce, perfecto para cualquier ocasión.",
                 precio = 40000,
-                imagen = "torta_circular_vainilla",
+                imagen = "torta_circular_de_vainilla",
                 categoria = "circulares",
                 stock = 3,
                 destacado = true
@@ -121,7 +121,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Circular de Manjar",
                 descripcion = "Torta tradicional chilena con manjar y nueces, un deleite para los amantes de los sabores dulces y clásicos.",
                 precio = 42000,
-                imagen = "torta_circular_manjar",
+                imagen = "torta_circular_de_manjar",
                 categoria = "circulares",
                 stock = 4,
                 destacado = false
@@ -133,7 +133,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Cuadrada de Chocolate",
                 descripcion = "Deliciosa torta de chocolate con capas de ganache y un toque de avellanas. Personalizable con mensajes especiales.",
                 precio = 45000,
-                imagen = "torta_cuadrada_chocolate",
+                imagen = "torta_cuadrada_de_chocolate",
                 categoria = "cuadradas",
                 stock = 1,
                 destacado = true
@@ -143,7 +143,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Cuadrada de Frutas",
                 descripcion = "Una mezcla de frutas frescas y crema chantilly sobre un suave bizcocho de vainilla, ideal para celebraciones.",
                 precio = 50000,
-                imagen = "torta_cuadrada_frutas",
+                imagen = "torta_cuadrada_de_frutas",
                 categoria = "cuadradas",
                 stock = 3,
                 destacado = false
@@ -155,7 +155,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Especial de Cumpleaños",
                 descripcion = "Diseñada especialmente para celebraciones, personalizable con decoraciones y mensajes únicos.",
                 precio = 55000,
-                imagen = "torta_especial_cumpleanos",
+                imagen = "torta_especial_de_cumpleanos",
                 categoria = "especiales",
                 stock = 2,
                 destacado = true
@@ -165,7 +165,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Torta Especial de Boda",
                 descripcion = "Elegante y deliciosa, esta torta está diseñada para ser el centro de atención en cualquier boda.",
                 precio = 60000,
-                imagen = "torta_especial_boda",
+                imagen = "torta_especial_de_boda",
                 categoria = "especiales",
                 stock = 2,
                 destacado = false
@@ -174,10 +174,10 @@ class ProductoRepository(private val productoDao: ProductoDao) {
             // TRADICIONAL
             Producto(
                 id = IdGenerator.generarIdProducto(),
-                nombre = "Empanada de Manzana",
+                nombre = "Empanadas de Manzana",
                 descripcion = "Pastelería tradicional rellena de manzanas especiadas, perfecta para un dulce desayuno o merienda.",
                 precio = 3000,
-                imagen = "empanada_manzana",
+                imagen = "empanadas_de_manzana",
                 categoria = "tradicional",
                 stock = 18,
                 destacado = true
@@ -187,7 +187,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 nombre = "Tarta de Santiago",
                 descripcion = "Tradicional tarta española hecha con almendras, azúcar, y huevos, una delicia para los amantes de los postres clásicos.",
                 precio = 6000,
-                imagen = "tarta_santiago",
+                imagen = "tarta_de_santiago",
                 categoria = "tradicional",
                 stock = 10,
                 destacado = false
