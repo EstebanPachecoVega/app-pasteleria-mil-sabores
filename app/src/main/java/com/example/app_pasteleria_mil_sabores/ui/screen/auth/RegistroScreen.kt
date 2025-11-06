@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -42,13 +43,20 @@ fun RegistroScreen(
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmarPassword by remember { mutableStateOf("") }
+    var fechaNacimiento by remember { mutableStateOf("") }
+    var codigoPromocional by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmarPasswordVisible by remember { mutableStateOf(false) }
 
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     // Validaciones
-    val correoValido = correo.isNotBlank() && (correo.endsWith("@duoc.cl", ignoreCase = true) || correo.equals("admin@duoc.cl", ignoreCase = true))
+    val correoValido = correo.isNotBlank() && (
+            correo.endsWith("@duoc.cl", ignoreCase = true) ||
+                    correo.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
+                    correo.endsWith("@gmail.com", ignoreCase = true) ||
+                    correo.equals("admin@duoc.cl", ignoreCase = true)
+            )
     val passwordValido = password.length >= 6
     val confirmarPasswordValido = confirmarPassword == password
     val formularioValido = correoValido && passwordValido && confirmarPasswordValido
@@ -57,7 +65,9 @@ fun RegistroScreen(
     val tipoUsuario = remember(correo) {
         when {
             correo.equals("admin@duoc.cl", ignoreCase = true) -> "Administrador"
+            correo.endsWith("@profesor.duoc.cl", ignoreCase = true) -> "Profesor"
             correo.endsWith("@duoc.cl", ignoreCase = true) -> "Cliente"
+            correo.endsWith("@gmail.com", ignoreCase = true) -> "Cliente"
             else -> "Cliente"
         }
     }
@@ -89,7 +99,7 @@ fun RegistroScreen(
             },
             placeholder = {
                 Text(
-                    "ejemplo@duoc.cl",
+                    "Ingrese su correo electrónico",
                     style = MaterialTheme.typography.bodySmall
                 )
             },
@@ -97,7 +107,7 @@ fun RegistroScreen(
             supportingText = {
                 if (correo.isNotBlank() && !correoValido) {
                     Text(
-                        text = "Debe ser un correo @duoc.cl",
+                        text = "Debe ser un correo válido",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -111,15 +121,81 @@ fun RegistroScreen(
             modifier = Modifier.fillMaxWidth(0.8f)
         )
 
-        // Mostrar el tipo de usuario que se creará
-        if (correo.isNotBlank()) {
-            Text(
-                text = "Serás registrado como: $tipoUsuario",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (tipoUsuario == "Administrador") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Campo de fecha de nacimiento (opcional)
+        OutlinedTextField(
+            value = fechaNacimiento,
+            onValueChange = { fechaNacimiento = it },
+            label = {
+                Text(
+                    "Fecha de nacimiento (opcional)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            placeholder = {
+                Text(
+                    "dd/MM/yyyy",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            ),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Campo de código promocional (opcional)
+        OutlinedTextField(
+            value = codigoPromocional,
+            onValueChange = { codigoPromocional = it },
+            label = {
+                Text(
+                    "Código promocional (opcional)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            placeholder = {
+                Text(
+                    "Ej: CODIGO_PROMOCIONAL",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            trailingIcon = {
+                if (codigoPromocional.equals("FELICES50", ignoreCase = true)) {
+                    Icon(
+                        Icons.Default.Verified,
+                        contentDescription = "Código válido",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            supportingText = {
+                if (codigoPromocional.isNotBlank()) {
+                    Text(
+                        text = if (codigoPromocional.equals("FELICES50", ignoreCase = true)) {
+                            "10% de descuento permanente"
+                        } else {
+                            "Código no reconocido"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (codigoPromocional.equals("FELICES50", ignoreCase = true)) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        }
+                    )
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            ),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -235,11 +311,18 @@ fun RegistroScreen(
             Button(
                 onClick = {
                     if (formularioValido) {
-                        viewModel.agregarUsuario(correo, password)
+                        viewModel.agregarUsuario(
+                            correo = correo,
+                            password = password,
+                            fechaNacimiento = if (fechaNacimiento.isNotBlank()) fechaNacimiento else null,
+                            codigoPromocion = if (codigoPromocional.isNotBlank()) codigoPromocional else null
+                        )
                         // Limpiar campos después del registro
                         correo = ""
                         password = ""
                         confirmarPassword = ""
+                        fechaNacimiento = ""
+                        codigoPromocional = ""
                         onRegistroExitoso()
                     }
                 },

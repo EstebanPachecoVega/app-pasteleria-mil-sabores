@@ -22,7 +22,9 @@ interface UsuarioDao {
     @Query("UPDATE Usuario SET password = :nuevaPassword WHERE nombre = :nombre")
     suspend fun actualizarPassword(nombre: String, nuevaPassword: String)
 
-    // Nueva consulta para obtener usuarios por tipo
     @Query("SELECT * FROM Usuario WHERE tipoUsuario = :tipo")
     suspend fun obtenerUsuariosPorTipo(tipo: String): List<Usuario>
+
+    @Query("SELECT * FROM Usuario WHERE codigoPromocion = :codigo")
+    suspend fun buscarPorCodigoPromocional(codigo: String): Usuario?
 }

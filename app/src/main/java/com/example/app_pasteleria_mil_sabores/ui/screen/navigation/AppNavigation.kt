@@ -124,18 +124,13 @@ fun AppNavigation(
 
         Pantallas.CARRITO -> {
             CarritoScreen(
-                onVolver = {
-                    pantallaActual = Pantallas.PRINCIPAL
-                },
-                onContinuarCompra = {
-                    pantallaActual = Pantallas.PRINCIPAL
-                },
+                onVolver = { pantallaActual = Pantallas.PRINCIPAL },
+                onContinuarCompra = { pantallaActual = Pantallas.PRINCIPAL },
                 onCheckout = {
-                    // Navegar a checkout (lo implementaremos después)
                     println("DEBUG - Navegando a checkout")
-                    // pantallaActual = Pantallas.CHECKOUT
                 },
-                viewModel = carritoViewModel
+                viewModel = carritoViewModel,
+                usuarioActual = usuarioLogueado // ← Agregar esta línea
             )
         }
     }

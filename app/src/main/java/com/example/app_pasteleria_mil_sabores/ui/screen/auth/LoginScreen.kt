@@ -51,7 +51,12 @@ fun LoginScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     // Validaciones
-    val correoValido = correo.isNotBlank() && (correo.endsWith("@duoc.cl", ignoreCase = true) || correo.equals("admin@duoc.cl", ignoreCase = true))
+    val correoValido = correo.isNotBlank() && (
+            correo.endsWith("@duoc.cl", ignoreCase = true) ||
+                    correo.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
+                    correo.endsWith("@gmail.com", ignoreCase = true) ||
+                    correo.equals("admin@duoc.cl", ignoreCase = true)
+            )
     val passwordValido = password.length >= 6
     val formularioValido = correoValido && passwordValido
 
@@ -98,7 +103,7 @@ fun LoginScreen(
                 },
                 placeholder = {
                     Text(
-                        "ejemplo@duoc.cl",
+                        "Ingrese su correo electrónico",
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
@@ -106,7 +111,7 @@ fun LoginScreen(
                 supportingText = {
                     if (correo.isNotBlank() && !correoValido) {
                         Text(
-                            text = "Debe ser un correo @duoc.cl",
+                            text = "Debe ser un correo válido",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )

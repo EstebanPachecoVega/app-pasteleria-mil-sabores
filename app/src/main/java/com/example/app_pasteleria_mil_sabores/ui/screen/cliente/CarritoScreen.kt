@@ -35,14 +35,17 @@ fun CarritoScreen(
     onVolver: () -> Unit,
     onContinuarCompra: () -> Unit,
     onCheckout: () -> Unit,
-    viewModel: CarritoViewModel
+    viewModel: CarritoViewModel,
+    usuarioActual: com.example.app_pasteleria_mil_sabores.model.Usuario? = null
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
     val total by viewModel.total.collectAsState()
     val itemCount by viewModel.itemCount.collectAsState()
 
-    // Estado para el diálogo de confirmación
     var showClearCartDialog by remember { mutableStateOf(false) }
+
+    val descuentos = viewModel.calcularDescuentos(usuarioActual)
+    val totalConDescuento = viewModel.calcularTotalConDescuentos(usuarioActual)
 
     Scaffold(
         topBar = {
@@ -64,21 +67,17 @@ fun CarritoScreen(
                     }
                 },
                 actions = {
-                    // Botón Limpiar Carrito en la AppBar - SOLO si hay items
                     if (cartItems.isNotEmpty()) {
                         TextButton(
                             onClick = { showClearCartDialog = true }
                         ) {
                             Icon(
-                                Icons.Outlined.DeleteSweep, // Icono diferente
+                                Icons.Outlined.DeleteSweep,
                                 contentDescription = "Limpiar carrito",
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Limpiar",
-                                style = MaterialTheme.typography.labelMedium
-                            )
+                            Text("Limpiar")
                         }
                     }
                 },
@@ -96,11 +95,9 @@ fun CarritoScreen(
                 .padding(innerPadding)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 if (cartItems.isEmpty()) {
-                    // Carrito vacío
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -142,7 +139,6 @@ fun CarritoScreen(
                         }
                     }
                 } else {
-                    // Lista de productos en el carrito - SIN botón limpiar
                     LazyColumn(
                         modifier = Modifier
                             .weight(1f)
@@ -165,7 +161,6 @@ fun CarritoScreen(
                 }
             }
 
-            // Botón fijo en la parte inferior
             if (cartItems.isNotEmpty()) {
                 Surface(
                     modifier = Modifier
@@ -177,22 +172,88 @@ fun CarritoScreen(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
+                        // Mostrar descuentos aplicados
+                        if (descuentos.isNotEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                                    .padding(12.dp)
+                            ) {
+                                Text(
+                                    "🎁 Descuentos aplicados",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                descuentos.forEach { descuento ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            descuento.descripcion,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Text(
+                                            "-${descuento.porcentaje.toInt()}%",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
                         // Resumen del pedido
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                "Total:",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                total.formatearPrecio(),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("Subtotal:", style = MaterialTheme.typography.bodyMedium)
+                            Text(total.formatearPrecio(), style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        if (descuentos.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Total con descuento:",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    totalConDescuento.formatearPrecio(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Total:",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    total.formatearPrecio(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -205,7 +266,6 @@ fun CarritoScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Botón de checkout
                         Button(
                             onClick = onCheckout,
                             modifier = Modifier
@@ -230,7 +290,6 @@ fun CarritoScreen(
             }
         }
 
-        // Diálogo de confirmación para limpiar carrito
         if (showClearCartDialog) {
             AlertDialog(
                 onDismissRequest = { showClearCartDialog = false },
@@ -296,7 +355,6 @@ fun CartItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Imagen del producto
             val imageResource = rememberImageResource(item.producto.imagen)
             Box(
                 modifier = Modifier
@@ -328,7 +386,6 @@ fun CartItemCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información del producto
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -349,11 +406,9 @@ fun CartItemCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Contador de cantidad
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón -
                     IconButton(
                         onClick = {
                             if (item.cantidad > 1) {
@@ -371,7 +426,6 @@ fun CartItemCard(
                         )
                     }
 
-                    // Cantidad
                     Text(
                         text = item.cantidad.toString(),
                         style = MaterialTheme.typography.titleSmall,
@@ -381,7 +435,6 @@ fun CartItemCard(
                             .wrapContentWidth(Alignment.CenterHorizontally)
                     )
 
-                    // Botón +
                     IconButton(
                         onClick = {
                             if (item.cantidad < item.producto.stock) {
@@ -405,11 +458,9 @@ fun CartItemCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Precio total y botón eliminar
             Column(
                 horizontalAlignment = Alignment.End
             ) {
-                // Precio total
                 Text(
                     text = item.getPrecioTotal().formatearPrecio(),
                     style = MaterialTheme.typography.titleSmall,
@@ -419,7 +470,6 @@ fun CartItemCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Botón eliminar
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier
@@ -437,7 +487,6 @@ fun CartItemCard(
             }
         }
 
-        // Indicador de stock máximo
         if (item.cantidad >= item.producto.stock) {
             Box(
                 modifier = Modifier
