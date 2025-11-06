@@ -15,6 +15,7 @@ import com.example.app_pasteleria_mil_sabores.data.ProductoRepository
 import com.example.app_pasteleria_mil_sabores.ui.screen.navigation.AppNavigation
 import com.example.app_pasteleria_mil_sabores.ui.screen.splash.SplashScreen
 import com.example.app_pasteleria_mil_sabores.ui.theme.AppPasteleriaMilSaboresTheme
+import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
@@ -55,6 +56,10 @@ fun FormularioApp(){
         ProductoViewModel(productoRepository)
     }
 
+    val carritoViewModel = remember {
+        CarritoViewModel()
+    }
+
     val showSplash = remember { mutableStateOf(true) }
 
     if (showSplash.value) {
@@ -64,7 +69,16 @@ fun FormularioApp(){
     } else {
         AppNavigation(
             viewModel = usuarioViewModel,
-            productoViewModel = productoViewModel
+            productoViewModel = productoViewModel,
+            carritoViewModel = carritoViewModel
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FormularioAppPreview() {
+    AppPasteleriaMilSaboresTheme {
+        FormularioApp()
     }
 }

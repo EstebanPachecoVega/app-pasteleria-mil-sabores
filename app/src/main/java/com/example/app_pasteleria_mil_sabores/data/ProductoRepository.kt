@@ -135,7 +135,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 precio = 45000,
                 imagen = "torta_cuadrada_de_chocolate",
                 categoria = "cuadradas",
-                stock = 1,
+                stock = 0,
                 destacado = true
             ),
             Producto(

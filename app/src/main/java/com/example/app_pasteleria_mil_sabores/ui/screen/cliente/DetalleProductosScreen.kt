@@ -27,15 +27,16 @@ import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
 import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
+import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleProductoScreen(
     producto: Producto,
     onVolver: () -> Unit,
-    onAgregarAlCarrito: (Producto, Int) -> Unit
+    carritoViewModel: CarritoViewModel
 ) {
-    var cantidad by remember { mutableStateOf("1") } // Ahora es String para edición directa
+    var cantidad by remember { mutableStateOf(if (producto.stock > 0) "1" else "0") }
     var isEditing by remember { mutableStateOf(false) }
     val imageResource = rememberImageResource(producto.imagen)
 
@@ -43,14 +44,14 @@ fun DetalleProductoScreen(
     val maxDisponible = producto.stock
 
     // Convertir a Int para cálculos, con validación
-    val cantidadInt = cantidad.toIntOrNull() ?: 1
+    val cantidadInt = cantidad.toIntOrNull() ?: if (producto.stock > 0) 1 else 0
 
     // Efecto para validar automáticamente cuando se deja de editar
     LaunchedEffect(isEditing) {
         if (!isEditing) {
-            // Validar y corregir la cantidad cuando se deja de editar
-            val parsed = cantidad.toIntOrNull() ?: 1
+            val parsed = cantidad.toIntOrNull() ?: if (producto.stock > 0) 1 else 0
             val corrected = when {
+                producto.stock == 0 -> 0 // Si está agotado, forzar 0
                 parsed < 1 -> 1
                 parsed > maxDisponible -> maxDisponible
                 else -> parsed
@@ -304,92 +305,105 @@ fun DetalleProductoScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Contador con botones + y - y campo de entrada editable
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Botón -
-                        IconButton(
-                            onClick = {
-                                val current = cantidad.toIntOrNull() ?: 1
-                                if (current > 1) {
-                                    cantidad = (current - 1).toString()
-                                }
-                            },
-                            enabled = (cantidad.toIntOrNull() ?: 1) > 1,
-                            modifier = Modifier.size(48.dp)
+                    if (producto.stock > 0) {
+                        // MOSTRAR CONTADOR NORMAL SI HAY STOCK
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Outlined.Remove,
-                                contentDescription = "Reducir cantidad",
-                                tint = if ((cantidad.toIntOrNull() ?: 1) > 1) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                        }
-
-                        // Campo de cantidad editable - TRANSPARENTE
-                        OutlinedTextField(
-                            value = cantidad,
-                            onValueChange = { newValue: String ->
-                                if (newValue.all { it.isDigit() } && newValue.length <= 3) {
-                                    cantidad = newValue
-                                }
-                            },
-                            modifier = Modifier
-                                .width(80.dp)
-                                .height(56.dp)
-                                .onFocusChanged { focusState: FocusState ->
-                                    isEditing = focusState.isFocused
-                                    if (!focusState.isFocused) {
-                                        val parsed = cantidad.toIntOrNull() ?: 1
-                                        val corrected = when {
-                                            parsed < 1 -> 1
-                                            parsed > maxDisponible -> maxDisponible
-                                            else -> parsed
-                                        }
-                                        cantidad = corrected.toString()
+                            // Botón -
+                            IconButton(
+                                onClick = {
+                                    val current = cantidad.toIntOrNull() ?: 1
+                                    if (current > 1) {
+                                        cantidad = (current - 1).toString()
                                     }
                                 },
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number
-                            ),
-                            singleLine = true
-                        )
+                                enabled = (cantidad.toIntOrNull() ?: 1) > 1,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Remove,
+                                    contentDescription = "Reducir cantidad",
+                                    tint = if ((cantidad.toIntOrNull() ?: 1) > 1) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            }
 
-                        // Botón +
-                        IconButton(
-                            onClick = {
-                                val current = cantidad.toIntOrNull() ?: 1
-                                if (current < maxDisponible) {
-                                    cantidad = (current + 1).toString()
-                                }
-                            },
-                            enabled = (cantidad.toIntOrNull() ?: 1) < maxDisponible,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Add,
-                                contentDescription = "Aumentar cantidad",
-                                tint = if ((cantidad.toIntOrNull() ?: 1) < maxDisponible) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                            // Campo de cantidad editable
+                            OutlinedTextField(
+                                value = cantidad,
+                                onValueChange = { newValue: String ->
+                                    if (newValue.isEmpty()) {
+                                        cantidad = "1"
+                                    } else if (newValue.all { it.isDigit() } && newValue.length <= 3) {
+                                        val parsedValue = newValue.toIntOrNull() ?: 1
+                                        if (parsedValue > maxDisponible) {
+                                            cantidad = maxDisponible.toString()
+                                        } else if (parsedValue < 1) {
+                                            cantidad = "1"
+                                        } else {
+                                            cantidad = newValue
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(56.dp)
+                                    .onFocusChanged { focusState: FocusState ->
+                                        isEditing = focusState.isFocused
+                                        if (!focusState.isFocused) {
+                                            val parsed = if (cantidad.isEmpty()) 1 else cantidad.toIntOrNull() ?: 1
+                                            val corrected = when {
+                                                parsed < 1 -> 1
+                                                parsed > maxDisponible -> maxDisponible
+                                                else -> parsed
+                                            }
+                                            cantidad = corrected.toString()
+                                        }
+                                    },
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number
+                                ),
+                                singleLine = true,
+                                enabled = producto.stock > 0
                             )
-                        }
-                    }
 
-                    // Indicador de stock máximo y validación
-                    if (maxDisponible > 0) {
+                            // Botón +
+                            IconButton(
+                                onClick = {
+                                    val current = cantidad.toIntOrNull() ?: 1
+                                    if (current < maxDisponible) {
+                                        cantidad = (current + 1).toString()
+                                    } else {
+                                        cantidad = maxDisponible.toString()
+                                    }
+                                },
+                                enabled = (cantidad.toIntOrNull() ?: 1) < maxDisponible,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Add,
+                                    contentDescription = "Aumentar cantidad",
+                                    tint = if ((cantidad.toIntOrNull() ?: 1) < maxDisponible) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            }
+                        }
+
+                        // Indicador de stock máximo
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -401,29 +415,67 @@ fun DetalleProductoScreen(
                                 modifier = Modifier.padding(top = 8.dp)
                             )
 
-                            // Mensaje de advertencia si se excede el máximo
-                            if (cantidadInt > maxDisponible && !isEditing) {
+                            if (cantidadInt > maxDisponible) {
                                 Text(
-                                    text = "ⓘ Se ajustará al máximo disponible",
+                                    text = "ⓘ Se ajustó al máximo disponible",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
                         }
+                    } else {
+                        // MOSTRAR CAMPO DESHABILITADO CON 0 SI NO HAY STOCK
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = "0",
+                                onValueChange = { },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(56.dp),
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                ),
+                                singleLine = true,
+                                enabled = false // Deshabilitado cuando no hay stock
+                            )
+                        }
+
+                        // Mensaje de producto agotado
+                        Text(
+                            text = "Producto agotado - no disponible",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Botón Agregar al Carrito
+                    // Botón Agregar al Carrito - MEJORADO
                     Button(
                         onClick = {
-                            val finalCantidad = minOf(cantidadInt, maxDisponible)
-                            if (finalCantidad < 1) {
-                                cantidad = "1"
-                            } else {
-                                onAgregarAlCarrito(producto, finalCantidad)
+                            val finalCantidad = when {
+                                cantidad.isEmpty() -> if (producto.stock > 0) 1 else 0
+                                cantidadInt < 1 -> if (producto.stock > 0) 1 else 0
+                                cantidadInt > maxDisponible -> maxDisponible
+                                else -> cantidadInt
                             }
+
+                            if (finalCantidad.toString() != cantidad) {
+                                cantidad = finalCantidad.toString()
+                            }
+
+                            carritoViewModel.agregarProducto(producto, finalCantidad)
                         },
                         enabled = producto.stock > 0,
                         modifier = Modifier
@@ -459,7 +511,7 @@ fun DetalleProductoScreen(
                         )
                     }
 
-                    // Mensaje informativo
+                    // Mensaje informativo - MEJORADO
                     if (producto.stock > 0) {
                         Text(
                             text = "Precio total por $cantidadInt ${if (cantidadInt == 1) "unidad" else "unidades"}",

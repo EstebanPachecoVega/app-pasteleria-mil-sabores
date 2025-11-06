@@ -25,6 +25,7 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
 import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
+import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +33,7 @@ fun ClienteHomeScreen(
     usuario: Usuario,
     viewModel: FormularioViewModel,
     productoViewModel: ProductoViewModel,
+    carritoViewModel: CarritoViewModel,
     onCerrarSesion: () -> Unit,
     onVerPerfil: () -> Unit,
     onVerCarrito: () -> Unit,
@@ -42,6 +44,7 @@ fun ClienteHomeScreen(
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
     val productos by productoViewModel.productos.collectAsState()
+    val itemCount by carritoViewModel.itemCount.collectAsState()
 
     // Cargar productos al iniciar
     LaunchedEffect(Unit) {
@@ -75,9 +78,21 @@ fun ClienteHomeScreen(
                     )
                 },
                 navigationIcon = {
-                    // Carrito en esquina izquierda
-                    IconButton(onClick = onVerCarrito) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
+                    // Carrito en esquina izquierda con badge
+                    Box {
+                        IconButton(onClick = onVerCarrito) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
+                        }
+                        if (itemCount > 0) {
+                            Badge(
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            ) {
+                                Text(
+                                    text = if (itemCount > 99) "99+" else itemCount.toString(),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {
@@ -153,7 +168,7 @@ fun ClienteHomeScreen(
                         ProductoCard(
                             producto = producto,
                             onAgregarAlCarrito = {
-                                // Aquí implementaremos la lógica del carrito
+                                carritoViewModel.agregarProducto(producto, 1)
                             },
                             onVerDetalle = { onVerDetalleProducto(producto) }
                         )
