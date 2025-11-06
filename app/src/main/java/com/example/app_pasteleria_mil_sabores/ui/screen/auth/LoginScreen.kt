@@ -137,6 +137,12 @@ fun LoginScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 },
+                placeholder = {
+                    Text(
+                        "Ingrese su contraseña",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -151,7 +157,7 @@ fun LoginScreen(
                 supportingText = {
                     if (password.isNotBlank() && !passwordValido) {
                         Text(
-                            text = "Mínimo 6 caracteres",
+                            text = "Mínimo 6 carácteres",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )

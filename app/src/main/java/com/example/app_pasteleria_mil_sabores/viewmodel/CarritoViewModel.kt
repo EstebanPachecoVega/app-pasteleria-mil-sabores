@@ -8,6 +8,8 @@ import com.example.app_pasteleria_mil_sabores.model.Producto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 data class Descuento(
@@ -17,12 +19,21 @@ data class Descuento(
     val esAplicable: Boolean
 )
 
+data class ResumenCarrito(
+    val subtotal: Int,
+    val descuentoAplicado: Int,
+    val total: Int,
+    val descuentos: List<Descuento>
+)
+
 class CarritoViewModel : ViewModel() {
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
 
-    private val _total = MutableStateFlow(0)
-    val total: StateFlow<Int> = _total.asStateFlow()
+    private val _usuarioActual = MutableStateFlow<Usuario?>(null)
+
+    private val _resumenCarrito = MutableStateFlow(ResumenCarrito(0, 0, 0, emptyList()))
+    val resumenCarrito: StateFlow<ResumenCarrito> = _resumenCarrito.asStateFlow()
 
     private val _itemCount = MutableStateFlow(0)
     val itemCount: StateFlow<Int> = _itemCount.asStateFlow()
@@ -34,11 +45,13 @@ class CarritoViewModel : ViewModel() {
     val errorMessage = _errorMessage.asStateFlow()
 
     init {
+        // Combinar los flujos de items y usuario para recalcular automáticamente
         viewModelScope.launch {
-            _cartItems.collect { items ->
-                _total.value = items.sumOf { it.getPrecioTotal() }
+            combine(_cartItems, _usuarioActual) { items, usuario ->
+                val subtotal = items.sumOf { it.getPrecioTotal() }
                 _itemCount.value = items.sumOf { it.cantidad }
-            }
+                calcularResumenCarrito(subtotal, usuario)
+            }.collect()
         }
     }
 
@@ -81,19 +94,40 @@ class CarritoViewModel : ViewModel() {
         return descuentos
     }
 
-    fun calcularTotalConDescuentos(usuario: Usuario?): Int {
-        val subtotal = total.value
+    private fun calcularResumenCarrito(subtotal: Int, usuario: Usuario? = null) {
         val descuentos = calcularDescuentos(usuario)
 
-        if (descuentos.isEmpty()) return subtotal
+        if (descuentos.isEmpty()) {
+            _resumenCarrito.value = ResumenCarrito(
+                subtotal = subtotal,
+                descuentoAplicado = 0,
+                total = subtotal,
+                descuentos = emptyList()
+            )
+            return
+        }
 
         // Aplicar el descuento más beneficioso
         val mayorDescuento = descuentos.maxByOrNull { it.porcentaje }
-        return if (mayorDescuento != null && mayorDescuento.esAplicable) {
-            (subtotal * (1 - mayorDescuento.porcentaje / 100)).toInt()
+        val descuentoAplicado = if (mayorDescuento != null && mayorDescuento.esAplicable) {
+            (subtotal * (mayorDescuento.porcentaje / 100)).toInt()
         } else {
-            subtotal
+            0
         }
+
+        val total = subtotal - descuentoAplicado
+
+        _resumenCarrito.value = ResumenCarrito(
+            subtotal = subtotal,
+            descuentoAplicado = descuentoAplicado,
+            total = total,
+            descuentos = descuentos
+        )
+    }
+
+    // Método para actualizar el usuario actual
+    fun setUsuarioActual(usuario: Usuario?) {
+        _usuarioActual.value = usuario
     }
 
     fun agregarProducto(producto: Producto, cantidad: Int) {

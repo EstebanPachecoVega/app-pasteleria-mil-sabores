@@ -26,6 +26,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 
@@ -39,13 +41,16 @@ fun CarritoScreen(
     usuarioActual: com.example.app_pasteleria_mil_sabores.model.Usuario? = null
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
-    val total by viewModel.total.collectAsState()
+    val resumen by viewModel.resumenCarrito.collectAsState()
     val itemCount by viewModel.itemCount.collectAsState()
 
     var showClearCartDialog by remember { mutableStateOf(false) }
+    var resumenHeight by remember { mutableStateOf(0) }
 
-    val descuentos = viewModel.calcularDescuentos(usuarioActual)
-    val totalConDescuento = viewModel.calcularTotalConDescuentos(usuarioActual)
+    // Actualizar el usuario en el ViewModel cuando cambie
+    LaunchedEffect(usuarioActual) {
+        viewModel.setUsuarioActual(usuarioActual)
+    }
 
     Scaffold(
         topBar = {
@@ -94,55 +99,57 @@ fun CarritoScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (cartItems.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
+            if (cartItems.isEmpty()) {
+                // Código del carrito vacío (se mantiene igual)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = "Carrito vacío",
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Tu carrito está vacío",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Agrega productos deliciosos a tu carrito",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = onContinuarCompra,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) {
-                            Icon(
-                                Icons.Default.ShoppingCart,
-                                contentDescription = "Carrito vacío",
-                                modifier = Modifier.size(80.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Tu carrito está vacío",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Agrega productos deliciosos a tu carrito",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = onContinuarCompra,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            ) {
-                                Text("Continuar Comprando")
-                            }
+                            Text("Continuar Comprando")
                         }
                     }
-                } else {
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // LazyColumn con padding bottom dinámico basado en la altura del resumen
                     LazyColumn(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(bottom = 120.dp),
+                            .padding(bottom = with(LocalDensity.current) { resumenHeight.toDp() }),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(16.dp)
                     ) {
@@ -161,11 +168,16 @@ fun CarritoScreen(
                 }
             }
 
+            // Resumen flotante en la parte inferior
             if (cartItems.isNotEmpty()) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .onGloballyPositioned { layoutCoordinates ->
+                            // Medir la altura real del resumen
+                            resumenHeight = layoutCoordinates.size.height
+                        },
                     tonalElevation = 8.dp,
                     shadowElevation = 8.dp
                 ) {
@@ -173,7 +185,7 @@ fun CarritoScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         // Mostrar descuentos aplicados
-                        if (descuentos.isNotEmpty()) {
+                        if (resumen.descuentos.isNotEmpty()) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -186,7 +198,7 @@ fun CarritoScreen(
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                descuentos.forEach { descuento ->
+                                resumen.descuentos.forEach { descuento ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
@@ -215,45 +227,46 @@ fun CarritoScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Subtotal:", style = MaterialTheme.typography.bodyMedium)
-                            Text(total.formatearPrecio(), style = MaterialTheme.typography.bodyMedium)
+                            Text(resumen.subtotal.formatearPrecio(), style = MaterialTheme.typography.bodyMedium)
                         }
 
-                        if (descuentos.isNotEmpty()) {
+                        // Mostrar el descuento aplicado
+                        if (resumen.descuentoAplicado > 0) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    "Total con descuento:",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    "Descuento:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    totalConDescuento.formatearPrecio(),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    "-${resumen.descuentoAplicado.formatearPrecio()}",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                        } else {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    "Total:",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    total.formatearPrecio(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Total:",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                resumen.total.formatearPrecio(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
