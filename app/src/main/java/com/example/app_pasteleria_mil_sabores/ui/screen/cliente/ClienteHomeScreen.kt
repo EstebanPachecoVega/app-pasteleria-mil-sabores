@@ -2,6 +2,7 @@ package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,11 +19,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
-import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
+import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
+import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
+import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,12 +36,14 @@ fun ClienteHomeScreen(
     onVerPerfil: () -> Unit,
     onVerCarrito: () -> Unit,
     onVerPedidos: () -> Unit,
-    onVerSoporte: () -> Unit
+    onVerSoporte: () -> Unit,
+    onVerDetalleProducto: (Producto) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
     val productos by productoViewModel.productos.collectAsState()
 
+    // Cargar productos al iniciar
     LaunchedEffect(Unit) {
         productoViewModel.cargarProductos()
     }
@@ -107,7 +111,7 @@ fun ClienteHomeScreen(
                                     onVerSoporte()
                                 }
                             )
-                            HorizontalDivider()
+                            Divider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar Sesión") },
                                 onClick = {
@@ -146,7 +150,13 @@ fun ClienteHomeScreen(
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     items(productos) { producto ->
-                        ProductoCard(producto = producto)
+                        ProductoCard(
+                            producto = producto,
+                            onAgregarAlCarrito = {
+                                // Aquí implementaremos la lógica del carrito
+                            },
+                            onVerDetalle = { onVerDetalleProducto(producto) }
+                        )
                     }
                 }
             }
@@ -154,25 +164,28 @@ fun ClienteHomeScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductoCard(producto: Producto) {
+fun ProductoCard(
+    producto: Producto,
+    onAgregarAlCarrito: (Producto) -> Unit,
+    onVerDetalle: (Producto) -> Unit
+) {
     val imageResource = rememberImageResource(producto.imagen)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .clickable { onVerDetalle(producto) },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Imagen del producto - Ahora usa la imagen real
+            // Imagen del producto
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -192,7 +205,6 @@ fun ProductoCard(producto: Producto) {
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Fallback si la imagen no existe
                     Icon(
                         painter = painterResource(android.R.drawable.ic_menu_gallery),
                         contentDescription = "Imagen no disponible",
@@ -204,10 +216,11 @@ fun ProductoCard(producto: Producto) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información del producto
+            // Información del producto - SOLO nombre y precio como solicitaste
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .weight(1f)
+                    .align(Alignment.CenterVertically)
             ) {
                 Text(
                     text = producto.nombre,
@@ -216,30 +229,33 @@ fun ProductoCard(producto: Producto) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = producto.descripcion,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "$${producto.precio}",
+                    text = producto.precio.formatearPrecio(), // Precio formateado
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Botón de agregar al carrito
-            IconButton(
-                onClick = { /* Agregar al carrito */ },
-                modifier = Modifier.align(Alignment.CenterVertically)
+            // Botón Agregar al Carrito con icono y texto
+            Button(
+                onClick = { onAgregarAlCarrito(producto) },
+                modifier = Modifier.align(Alignment.CenterVertically),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Icon(
                     Icons.Default.ShoppingCart,
                     contentDescription = "Agregar al carrito",
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "Agregar",
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }
