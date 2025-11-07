@@ -2,39 +2,35 @@ package com.example.app_pasteleria_mil_sabores.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalDate
-import java.time.Period
-import java.time.format.DateTimeFormatter
 
 @Entity(tableName = "Usuario")
 data class Usuario(
     @PrimaryKey
     val id: String,
-    val nombre: String,
+    val username: String,
+    val email: String,
     val password: String,
     val tipoUsuario: String,
-    val fechaNacimiento: String? = null, // Formato: "dd/MM/yyyy"
+    val fechaNacimiento: String? = null,
     val codigoPromocion: String? = null,
-    val fechaRegistro: Long = System.currentTimeMillis()
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val fotoPerfil: String? = null
 ) {
-    // Propiedades computadas para validaciones futuras
     val esEstudianteDuoc: Boolean
-        get() = nombre.endsWith("@duoc.cl", ignoreCase = true) &&
-                !nombre.endsWith("@profesor.duoc.cl", ignoreCase = true)
+        get() = email.endsWith("@duoc.cl", ignoreCase = true) &&
+                !email.endsWith("@profesor.duoc.cl", ignoreCase = true)
 
     val esProfesorDuoc: Boolean
-        get() = nombre.endsWith("@profesor.duoc.cl", ignoreCase = true)
+        get() = email.endsWith("@profesor.duoc.cl", ignoreCase = true)
 
     val correoValido: Boolean
-        get() = nombre.endsWith("@duoc.cl", ignoreCase = true) ||
-                nombre.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
-                nombre.endsWith("@gmail.com", ignoreCase = true)
+        get() = email.endsWith("@duoc.cl", ignoreCase = true) ||
+                email.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
+                email.endsWith("@gmail.com", ignoreCase = true)
 
-    // Propiedad computada para la edad
     val edad: Int?
         get() = calcularEdad()
 
-    // Función para calcular la edad
     private fun calcularEdad(): Int? {
         if (fechaNacimiento == null) return null
         return try {

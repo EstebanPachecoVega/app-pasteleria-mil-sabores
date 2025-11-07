@@ -1,30 +1,15 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,7 +27,7 @@ fun LoginScreen(
     onRegistrarClick: () -> Unit,
     onLoginExitoso: (Usuario) -> Unit
 ) {
-    var correo by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var mostrarRecuperarPassword by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -50,17 +35,15 @@ fun LoginScreen(
     val usuarioActual by viewModel.usuarioActual.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // Validaciones
-    val correoValido = correo.isNotBlank() && (
-            correo.endsWith("@duoc.cl", ignoreCase = true) ||
-                    correo.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
-                    correo.endsWith("@gmail.com", ignoreCase = true) ||
-                    correo.equals("admin@duoc.cl", ignoreCase = true)
+    val emailValido = email.isNotBlank() && (
+            email.endsWith("@duoc.cl", ignoreCase = true) ||
+                    email.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
+                    email.endsWith("@gmail.com", ignoreCase = true) ||
+                    email.equals("admin@duoc.cl", ignoreCase = true)
             )
     val passwordValido = password.length >= 6
-    val formularioValido = correoValido && passwordValido
+    val formularioValido = emailValido && passwordValido
 
-    // Navegar cuando el login sea exitoso
     LaunchedEffect(usuarioActual) {
         usuarioActual?.let { usuario ->
             onLoginExitoso(usuario)
@@ -91,25 +74,14 @@ fun LoginScreen(
                 }
             )
         } else {
-            // Campo de correo
             OutlinedTextField(
-                value = correo,
-                onValueChange = { correo = it },
-                label = {
-                    Text(
-                        "Correo electrónico",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                placeholder = {
-                    Text(
-                        "Ingrese su correo electrónico",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
-                isError = correo.isNotBlank() && !correoValido,
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Correo electrónico") },
+                placeholder = { Text("Ingrese su correo electrónico") },
+                isError = email.isNotBlank() && !emailValido,
                 supportingText = {
-                    if (correo.isNotBlank() && !correoValido) {
+                    if (email.isNotBlank() && !emailValido) {
                         Text(
                             text = "Debe ser un correo válido",
                             style = MaterialTheme.typography.labelSmall,
@@ -127,22 +99,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de contraseña con ojo
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = {
-                    Text(
-                        "Contraseña",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                placeholder = {
-                    Text(
-                        "Ingrese su contraseña",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
+                label = { Text("Contraseña") },
+                placeholder = { Text("Ingrese su contraseña") },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -185,7 +146,7 @@ fun LoginScreen(
             Button(
                 onClick = {
                     if (formularioValido) {
-                        viewModel.autenticarUsuario(correo, password)
+                        viewModel.autenticarUsuario(email, password)
                     }
                 },
                 enabled = formularioValido,
@@ -195,10 +156,7 @@ fun LoginScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text(
-                    text = "Iniciar Sesión",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("Iniciar Sesión")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -216,10 +174,7 @@ fun LoginScreen(
                         contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(
-                        "¿Olvidaste tu contraseña?",
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    Text("¿Olvidaste tu contraseña?")
                 }
 
                 TextButton(
@@ -231,10 +186,7 @@ fun LoginScreen(
                         contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(
-                        "Registrarse",
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    Text("Registrarse")
                 }
             }
         }
@@ -246,10 +198,10 @@ fun RecuperarPasswordSection(
     viewModel: FormularioViewModel,
     onVolver: () -> Unit
 ) {
-    var correo by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val correoValido = correo.isNotBlank() && (correo.endsWith("@duoc.cl", ignoreCase = true) || correo.equals("admin@duoc.cl", ignoreCase = true))
+    val emailValido = email.isNotBlank() && (email.endsWith("@duoc.cl", ignoreCase = true) || email.equals("admin@duoc.cl", ignoreCase = true))
 
     Column(
         modifier = Modifier.fillMaxWidth(0.8f).background(MaterialTheme.colorScheme.background),
@@ -263,23 +215,13 @@ fun RecuperarPasswordSection(
         )
 
         OutlinedTextField(
-            value = correo,
-            onValueChange = { correo = it },
-            label = {
-                Text(
-                    "Ingresa tu correo",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            placeholder = {
-                Text(
-                    "ejemplo@duoc.cl",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            },
-            isError = correo.isNotBlank() && !correoValido,
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Ingresa tu correo") },
+            placeholder = { Text("ejemplo@duoc.cl") },
+            isError = email.isNotBlank() && !emailValido,
             supportingText = {
-                if (correo.isNotBlank() && !correoValido) {
+                if (email.isNotBlank() && !emailValido) {
                     Text(
                         text = "Debe ser un correo @duoc.cl",
                         style = MaterialTheme.typography.labelSmall,
@@ -317,28 +259,22 @@ fun RecuperarPasswordSection(
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             ) {
-                Text(
-                    "Volver", // Cambiado de "Cancelar" a "Volver"
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("Volver")
             }
 
             Button(
                 onClick = {
-                    if (correoValido) {
-                        viewModel.recuperarPassword(correo)
+                    if (emailValido) {
+                        viewModel.recuperarPassword(email)
                     }
                 },
-                enabled = correoValido,
+                enabled = emailValido,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text(
-                    "Recuperar",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("Recuperar")
             }
         }
     }

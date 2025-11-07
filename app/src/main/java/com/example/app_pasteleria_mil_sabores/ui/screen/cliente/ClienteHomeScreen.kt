@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -16,9 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
@@ -46,7 +50,6 @@ fun ClienteHomeScreen(
     val productos by productoViewModel.productos.collectAsState()
     val itemCount by carritoViewModel.itemCount.collectAsState()
 
-    // Cargar productos al iniciar
     LaunchedEffect(Unit) {
         productoViewModel.cargarProductos()
     }
@@ -55,7 +58,6 @@ fun ClienteHomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Buscador centrado
                     OutlinedTextField(
                         value = query,
                         onValueChange = {
@@ -78,7 +80,6 @@ fun ClienteHomeScreen(
                     )
                 },
                 navigationIcon = {
-                    // Carrito en esquina izquierda con badge
                     Box {
                         IconButton(onClick = onVerCarrito) {
                             Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
@@ -96,10 +97,24 @@ fun ClienteHomeScreen(
                     }
                 },
                 actions = {
-                    // Perfil en esquina derecha con menú desplegable
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.AccountCircle, contentDescription = "Perfil")
+                            if (usuario.fotoPerfil != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(
+                                        ImageRequest.Builder(LocalContext.current)
+                                            .data(usuario.fotoPerfil)
+                                            .build()
+                                    ),
+                                    contentDescription = "Foto de perfil",
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(Icons.Default.AccountCircle, contentDescription = "Perfil")
+                            }
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -200,7 +215,6 @@ fun ProductoCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Imagen del producto
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -231,7 +245,6 @@ fun ProductoCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información del producto - SOLO nombre y precio como solicitaste
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -246,13 +259,12 @@ fun ProductoCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = producto.precio.formatearPrecio(), // Precio formateado
+                    text = producto.precio.formatearPrecio(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Botón Agregar al Carrito con icono y texto
             Button(
                 onClick = { onAgregarAlCarrito(producto) },
                 modifier = Modifier.align(Alignment.CenterVertically),

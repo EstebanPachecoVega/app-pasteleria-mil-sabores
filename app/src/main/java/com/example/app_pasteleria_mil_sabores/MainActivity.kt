@@ -17,6 +17,7 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.splash.SplashScreen
 import com.example.app_pasteleria_mil_sabores.ui.theme.AppPasteleriaMilSaboresTheme
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 class MainActivity : ComponentActivity() {
@@ -60,6 +61,10 @@ fun FormularioApp(){
         CarritoViewModel()
     }
 
+    val perfilViewModel = remember {
+        PerfilViewModel(database.usuarioDao())
+    }
+
     val showSplash = remember { mutableStateOf(true) }
 
     if (showSplash.value) {
@@ -70,7 +75,8 @@ fun FormularioApp(){
         AppNavigation(
             viewModel = usuarioViewModel,
             productoViewModel = productoViewModel,
-            carritoViewModel = carritoViewModel
+            carritoViewModel = carritoViewModel,
+            perfilViewModel = perfilViewModel
         )
     }
 }

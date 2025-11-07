@@ -18,38 +18,61 @@ class FormularioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
     val usuarioActual = _usuarioActual.asStateFlow()
     val errorMessage = _errorMessage.asStateFlow()
 
-    // Función para determinar el tipo de usuario basado en el correo
-    private fun determinarTipoUsuario(correo: String): String {
+    init {
+        viewModelScope.launch {
+            // Crear administrador por defecto si no existe
+            val adminExistente = usuarioDao.buscarPorEmail("admin@duoc.cl")
+            if (adminExistente == null) {
+                val admin = Usuario(
+                    id = IdGenerator.generarIdUsuario(),
+                    username = "admin",
+                    email = "admin@duoc.cl",
+                    password = "admin123",
+                    tipoUsuario = "Administrador"
+                )
+                usuarioDao.insertar(admin)
+                println("DEBUG - Administrador por defecto creado")
+            }
+        }
+    }
+
+    private fun determinarTipoUsuario(email: String): String {
         return when {
-            correo.equals("admin@duoc.cl", ignoreCase = true) -> "Administrador"
-            correo.endsWith("@profesor.duoc.cl", ignoreCase = true) -> "Profesor"
-            correo.endsWith("@duoc.cl", ignoreCase = true) -> "Cliente"
-            correo.endsWith("@gmail.com", ignoreCase = true) -> "Cliente"
-            else -> "Cliente" // Por defecto es Cliente
+            email.equals("admin@duoc.cl", ignoreCase = true) -> "Administrador"
+            email.endsWith("@profesor.duoc.cl", ignoreCase = true) -> "Profesor"
+            email.endsWith("@duoc.cl", ignoreCase = true) -> "Cliente"
+            email.endsWith("@gmail.com", ignoreCase = true) -> "Cliente"
+            else -> "Cliente"
         }
     }
 
     fun agregarUsuario(
-        correo: String,
+        username: String,
+        email: String,
         password: String,
         fechaNacimiento: String? = null,
         codigoPromocion: String? = null
     ) {
         viewModelScope.launch {
             try {
-                // Verificar si el usuario ya existe
-                val usuarioExistente = usuarioDao.buscarPorNombre(correo)
+                val usuarioExistente = usuarioDao.buscarPorEmail(email)
                 if (usuarioExistente != null) {
-                    _errorMessage.value = "El usuario ya existe"
+                    _errorMessage.value = "El email ya está registrado"
                     return@launch
                 }
 
-                // Determinar automáticamente el tipo de usuario
-                val tipoUsuario = determinarTipoUsuario(correo)
+                val usernameExistente = usuarioDao.buscarPorUsername(username)
+                if (usernameExistente != null) {
+                    _errorMessage.value = "El nombre de usuario ya está en uso"
+                    return@launch
+                }
+
+                val tipoUsuario = determinarTipoUsuario(email)
 
                 val nuevoUsuario = Usuario(
                     id = IdGenerator.generarIdUsuario(),
-                    nombre = correo,
+                    username = username,
+                    email = email,
                     password = password,
                     tipoUsuario = tipoUsuario,
                     fechaNacimiento = fechaNacimiento,
@@ -65,19 +88,13 @@ class FormularioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         }
     }
 
-    // Mantener la función original para compatibilidad
-    fun agregarUsuario(nombre: String, password: String) {
-        agregarUsuario(nombre, password, null, null)
-    }
-
-    fun autenticarUsuario(nombre: String, password: String) {
+    fun autenticarUsuario(email: String, password: String) {
         viewModelScope.launch {
             try {
-                val usuario = usuarioDao.autenticarUsuario(nombre, password)
+                val usuario = usuarioDao.autenticarUsuario(email, password)
                 if (usuario != null) {
                     _usuarioActual.value = usuario
                     _errorMessage.value = null
-                    println("Usuario autenticado: ${usuario.nombre}, Tipo: ${usuario.tipoUsuario}")
                 } else {
                     _errorMessage.value = "Credenciales incorrectas"
                     _usuarioActual.value = null
@@ -88,13 +105,12 @@ class FormularioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         }
     }
 
-    fun recuperarPassword(nombre: String) {
+    fun recuperarPassword(email: String) {
         viewModelScope.launch {
             try {
-                val usuario = usuarioDao.buscarPorNombre(nombre)
+                val usuario = usuarioDao.buscarPorEmail(email)
                 if (usuario != null) {
-                    // En una app real, aquí enviarías un email o SMS
-                    _errorMessage.value = "Se ha enviado un enlace de recuperación a $nombre"
+                    _errorMessage.value = "Se ha enviado un enlace de recuperación a $email"
                 } else {
                     _errorMessage.value = "Usuario no encontrado"
                 }
@@ -116,5 +132,9 @@ class FormularioViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         viewModelScope.launch {
             _usuarios.value = usuarioDao.obtenerUsuarios()
         }
+    }
+
+    fun actualizarUsuarioActual(usuario: Usuario) {
+        _usuarioActual.value = usuario
     }
 }

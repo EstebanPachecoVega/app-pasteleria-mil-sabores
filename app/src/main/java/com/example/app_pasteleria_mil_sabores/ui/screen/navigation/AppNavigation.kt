@@ -9,33 +9,53 @@ import androidx.compose.runtime.setValue
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminHomeScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminProductosScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AgregarProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.LoginScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.RegistroScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.CarritoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.ClienteHomeScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetalleProductoScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.PerfilScreen
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 enum class Pantallas {
-    LOGIN, REGISTRO, PRINCIPAL, DETALLE_PRODUCTO, CARRITO
+    LOGIN,
+    REGISTRO,
+    PRINCIPAL,
+    DETALLE_PRODUCTO,
+    CARRITO,
+    PERFIL,
+    ADMIN_HOME,
+    ADMIN_PRODUCTOS,
+    AGREGAR_PRODUCTO
 }
 
 @Composable
 fun AppNavigation(
     viewModel: FormularioViewModel,
     productoViewModel: ProductoViewModel,
-    carritoViewModel: CarritoViewModel // Agregar CarritoViewModel
+    carritoViewModel: CarritoViewModel,
+    perfilViewModel: PerfilViewModel
 ) {
     var pantallaActual by remember { mutableStateOf(Pantallas.LOGIN) }
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
 
-    // Debug
-    LaunchedEffect (pantallaActual, productoSeleccionado) {
+    // Función para cerrar sesión
+    fun cerrarSesion() {
+        usuarioLogueado = null
+        pantallaActual = Pantallas.LOGIN
+        viewModel.cerrarSesion()
+        carritoViewModel.limpiarCarrito()
+    }
+
+    LaunchedEffect(pantallaActual) {
         println("DEBUG - Pantalla actual: $pantallaActual")
-        println("DEBUG - Producto seleccionado: ${productoSeleccionado?.nombre}")
+        println("DEBUG - Usuario logueado: ${usuarioLogueado?.username} - Tipo: ${usuarioLogueado?.tipoUsuario}")
     }
 
     when (pantallaActual) {
@@ -44,7 +64,11 @@ fun AppNavigation(
             onRegistrarClick = { pantallaActual = Pantallas.REGISTRO },
             onLoginExitoso = { usuario ->
                 usuarioLogueado = usuario
-                pantallaActual = Pantallas.PRINCIPAL
+                // Redirigir según tipo de usuario
+                when (usuario.tipoUsuario) {
+                    "Administrador" -> pantallaActual = Pantallas.ADMIN_HOME
+                    else -> pantallaActual = Pantallas.PRINCIPAL
+                }
             }
         )
 
@@ -62,76 +86,121 @@ fun AppNavigation(
 
         Pantallas.PRINCIPAL -> {
             usuarioLogueado?.let { usuario ->
-                when (usuario.tipoUsuario) {
-                    "Administrador" -> AdminHomeScreen(
-                        usuario = usuario,
-                        viewModel = viewModel,
-                        productoViewModel = productoViewModel,
-                        onCerrarSesion = {
-                            usuarioLogueado = null
-                            pantallaActual = Pantallas.LOGIN
-                            viewModel.cerrarSesion()
-                            carritoViewModel.limpiarCarrito() // Limpiar carrito al cerrar sesión
-                        }
-                    )
-                    else -> ClienteHomeScreen(
-                        usuario = usuario,
-                        viewModel = viewModel,
-                        productoViewModel = productoViewModel,
-                        carritoViewModel = carritoViewModel, // Pasar CarritoViewModel
-                        onCerrarSesion = {
-                            usuarioLogueado = null
-                            pantallaActual = Pantallas.LOGIN
-                            viewModel.cerrarSesion()
-                            carritoViewModel.limpiarCarrito() // Limpiar carrito al cerrar sesión
-                        },
-                        onVerPerfil = { /* Navegar a perfil */ },
-                        onVerCarrito = {
-                            pantallaActual = Pantallas.CARRITO // Navegar a carrito
-                        },
-                        onVerPedidos = { /* Navegar a pedidos */ },
-                        onVerSoporte = { /* Navegar a soporte */ },
-                        onVerDetalleProducto = { producto ->
-                            productoSeleccionado = producto
-                            pantallaActual = Pantallas.DETALLE_PRODUCTO
-                        }
-                    )
-                }
+                ClienteHomeScreen(
+                    usuario = usuario,
+                    viewModel = viewModel,
+                    productoViewModel = productoViewModel,
+                    carritoViewModel = carritoViewModel,
+                    onCerrarSesion = { cerrarSesion() },
+                    onVerPerfil = {
+                        pantallaActual = Pantallas.PERFIL
+                    },
+                    onVerCarrito = {
+                        pantallaActual = Pantallas.CARRITO
+                    },
+                    onVerPedidos = { /* Navegar a pedidos */ },
+                    onVerSoporte = { /* Navegar a soporte */ },
+                    onVerDetalleProducto = { producto ->
+                        productoSeleccionado = producto
+                        pantallaActual = Pantallas.DETALLE_PRODUCTO
+                    }
+                )
             } ?: run {
                 pantallaActual = Pantallas.LOGIN
             }
         }
 
-        Pantallas.DETALLE_PRODUCTO -> {
-            println("DEBUG - Entrando a DETALLE_PRODUCTO")
-            println("DEBUG - Producto: $productoSeleccionado")
+        Pantallas.ADMIN_HOME -> {
+            usuarioLogueado?.let { usuario ->
+                AdminHomeScreen(
+                    usuario = usuario,
+                    viewModel = viewModel,
+                    productoViewModel = productoViewModel,
+                    onCerrarSesion = { cerrarSesion() },
+                    onGestionarProductos = {
+                        pantallaActual = Pantallas.ADMIN_PRODUCTOS
+                    }
+                )
+            } ?: run {
+                pantallaActual = Pantallas.LOGIN
+            }
+        }
 
+        Pantallas.ADMIN_PRODUCTOS -> {
+            usuarioLogueado?.let { usuario ->
+                AdminProductosScreen(
+                    usuario = usuario,
+                    viewModel = viewModel,
+                    productoViewModel = productoViewModel,
+                    onVolver = {
+                        pantallaActual = Pantallas.ADMIN_HOME
+                    },
+                    onAgregarProducto = {
+                        pantallaActual = Pantallas.AGREGAR_PRODUCTO
+                    }
+                )
+            } ?: run {
+                pantallaActual = Pantallas.LOGIN
+            }
+        }
+
+        Pantallas.AGREGAR_PRODUCTO -> {
+            AgregarProductoScreen(
+                productoViewModel = productoViewModel,
+                onCancelar = {
+                    // Volver a la gestión de productos
+                    pantallaActual = Pantallas.ADMIN_PRODUCTOS
+                },
+                onGuardarExitoso = {
+                    // Volver a la gestión de productos después de guardar
+                    pantallaActual = Pantallas.ADMIN_PRODUCTOS
+                }
+            )
+        }
+
+        Pantallas.DETALLE_PRODUCTO -> {
             productoSeleccionado?.let { producto ->
-                println("DEBUG - Producto encontrado: ${producto.nombre}")
                 DetalleProductoScreen(
                     producto = producto,
                     onVolver = {
-                        println("DEBUG - Volviendo desde detalle")
                         pantallaActual = Pantallas.PRINCIPAL
                     },
-                    carritoViewModel = carritoViewModel // Pasar CarritoViewModel
+                    carritoViewModel = carritoViewModel
                 )
             } ?: run {
-                println("DEBUG - ERROR: Producto es null, volviendo a PRINCIPAL")
                 pantallaActual = Pantallas.PRINCIPAL
             }
         }
 
         Pantallas.CARRITO -> {
             CarritoScreen(
-                onVolver = { pantallaActual = Pantallas.PRINCIPAL },
-                onContinuarCompra = { pantallaActual = Pantallas.PRINCIPAL },
+                onVolver = {
+                    pantallaActual = Pantallas.PRINCIPAL
+                },
+                onContinuarCompra = {
+                    pantallaActual = Pantallas.PRINCIPAL
+                },
                 onCheckout = {
                     println("DEBUG - Navegando a checkout")
+                    // Futuro: navegar a pantalla de checkout
                 },
                 viewModel = carritoViewModel,
-                usuarioActual = usuarioLogueado // ← Agregar esta línea
+                usuarioActual = usuarioLogueado
             )
+        }
+
+        Pantallas.PERFIL -> {
+            usuarioLogueado?.let { usuario ->
+                PerfilScreen(
+                    usuario = usuario,
+                    viewModel = perfilViewModel,
+                    onVolver = {
+                        pantallaActual = Pantallas.PRINCIPAL
+                    }
+                )
+            } ?: run {
+                pantallaActual = Pantallas.LOGIN
+            }
         }
     }
 }
