@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -32,6 +33,8 @@ import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.ui.components.DialogoConfirmacionLogout
 import com.example.app_pasteleria_mil_sabores.ui.components.ItemMenuCerrarSesion
+import com.example.app_pasteleria_mil_sabores.ui.components.BotonAgregarCarrito
+import com.example.app_pasteleria_mil_sabores.ui.components.EstadoProducto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +52,7 @@ fun ClienteHomeScreen(
 ) {
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
-    var showLogoutDialog by remember { mutableStateOf(false) } // Nuevo estado para el diálogo
+    var showLogoutDialog by remember { mutableStateOf(false) }
     val productos by productoViewModel.productos.collectAsState()
     val itemCount by carritoViewModel.itemCount.collectAsState()
 
@@ -57,7 +60,6 @@ fun ClienteHomeScreen(
         productoViewModel.cargarProductos()
     }
 
-    // Diálogo de confirmación para cerrar sesión
     if (showLogoutDialog) {
         DialogoConfirmacionLogout(
             onDismiss = { showLogoutDialog = false },
@@ -160,7 +162,7 @@ fun ClienteHomeScreen(
                             ItemMenuCerrarSesion(
                                 onClick = {
                                     menuExpanded = false
-                                    showLogoutDialog = true // Mostrar diálogo en lugar de cerrar directamente
+                                    showLogoutDialog = true
                                 }
                             )
                         }
@@ -211,7 +213,8 @@ fun ClienteHomeScreen(
 fun ProductoCard(
     producto: Producto,
     onAgregarAlCarrito: (Producto) -> Unit,
-    onVerDetalle: (Producto) -> Unit
+    onVerDetalle: (Producto) -> Unit,
+    proximamente: Boolean = false
 ) {
     val imageResource = rememberImageResource(producto.imagen)
 
@@ -228,6 +231,7 @@ fun ProductoCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Imagen
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -266,38 +270,53 @@ fun ProductoCard(
                 Text(
                     text = producto.nombre,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    color = if (proximamente) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = producto.precio.formatearPrecio(),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.titleSmall.copy(
+                    ),
+                    color = if (proximamente) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
                 )
+
+                // Solo mostrar "Agotado" o "Próximamente"
+                if (producto.stock <= 0 || proximamente) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (proximamente) "Próximamente" else "Agotado",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (proximamente) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        }
+                    )
+                }
             }
 
-            Button(
-                onClick = { onAgregarAlCarrito(producto) },
-                modifier = Modifier.align(Alignment.CenterVertically),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Icon(
-                    Icons.Default.ShoppingCart,
-                    contentDescription = "Agregar al carrito",
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    "Agregar",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
+            // Botón Agregar Carrito
+            BotonAgregarCarrito(
+                producto = producto,
+                onAgregarAlCarrito = { producto, cantidad -> onAgregarAlCarrito(producto) },
+                proximamente = proximamente,
+                esHomeScreen = true,
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .width(120.dp)
+            )
         }
     }
 }

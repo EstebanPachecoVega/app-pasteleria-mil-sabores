@@ -165,7 +165,8 @@ fun AppNavigation(
                     onVolver = {
                         pantallaActual = Pantallas.PRINCIPAL
                     },
-                    carritoViewModel = carritoViewModel
+                    carritoViewModel = carritoViewModel,
+                    proximamente = false
                 )
             } ?: run {
                 pantallaActual = Pantallas.PRINCIPAL
