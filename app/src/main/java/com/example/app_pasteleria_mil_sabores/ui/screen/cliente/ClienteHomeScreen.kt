@@ -30,6 +30,8 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 import com.example.app_pasteleria_mil_sabores.utils.rememberImageResource
 import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
+import com.example.app_pasteleria_mil_sabores.ui.components.DialogoConfirmacionLogout
+import com.example.app_pasteleria_mil_sabores.ui.components.ItemMenuCerrarSesion
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,11 +49,24 @@ fun ClienteHomeScreen(
 ) {
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) } // Nuevo estado para el diálogo
     val productos by productoViewModel.productos.collectAsState()
     val itemCount by carritoViewModel.itemCount.collectAsState()
 
     LaunchedEffect(Unit) {
         productoViewModel.cargarProductos()
+    }
+
+    // Diálogo de confirmación para cerrar sesión
+    if (showLogoutDialog) {
+        DialogoConfirmacionLogout(
+            onDismiss = { showLogoutDialog = false },
+            onConfirm = {
+                showLogoutDialog = false
+                viewModel.cerrarSesion()
+                onCerrarSesion()
+            }
+        )
     }
 
     Scaffold(
@@ -142,12 +157,10 @@ fun ClienteHomeScreen(
                                 }
                             )
                             Divider()
-                            DropdownMenuItem(
-                                text = { Text("Cerrar Sesión") },
+                            ItemMenuCerrarSesion(
                                 onClick = {
                                     menuExpanded = false
-                                    viewModel.cerrarSesion()
-                                    onCerrarSesion()
+                                    showLogoutDialog = true // Mostrar diálogo en lugar de cerrar directamente
                                 }
                             )
                         }

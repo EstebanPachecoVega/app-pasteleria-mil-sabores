@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
+import com.example.app_pasteleria_mil_sabores.ui.components.DialogoConfirmacionLogout
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,42 +47,11 @@ fun AdminHomeScreen(
 
     // Diálogo de confirmación para cerrar sesión
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = {
-                Text(
-                    "Cerrar sesión",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            text = {
-                Text("¿Seguro que quieres cerrar sesión?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        onCerrarSesion()
-                    }
-                ) {
-                    Text(
-                        "Sí, cerrar sesión",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showLogoutDialog = false }
-                ) {
-                    Text(
-                        "Cancelar",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+        DialogoConfirmacionLogout(
+            onDismiss = { showLogoutDialog = false },
+            onConfirm = {
+                showLogoutDialog = false
+                onCerrarSesion()
             }
         )
     }
