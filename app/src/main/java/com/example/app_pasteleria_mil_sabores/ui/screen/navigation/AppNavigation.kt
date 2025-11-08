@@ -77,13 +77,23 @@ fun AppNavigation(
         }
     }
 
+    // Efecto para cargar foto de perfil cuando cambia el usuario
+    LaunchedEffect(usuarioLogueado?.id) {
+        usuarioLogueado?.let { usuario ->
+            perfilViewModel.cargarFotoPerfil(usuario.id)
+        }
+    }
+
     // Función para actualizar el usuario logueado
     fun actualizarUsuarioLogueado(usuarioActualizado: Usuario) {
         usuarioLogueado = usuarioActualizado
+        // Forzar recarga de la foto de perfil
+        perfilViewModel.cargarFotoPerfil(usuarioActualizado.id)
     }
 
-    // Función para cerrar sesión
+    // Función para cerrar sesión (MEJORADA)
     fun cerrarSesion() {
+        val usuarioAnterior = usuarioLogueado
         usuarioLogueado = null
         pantallaActual = Pantallas.LOGIN
         navigationStack.clear()
@@ -92,6 +102,12 @@ fun AppNavigation(
         carritoViewModel.limpiarCarrito()
         perfilViewModel.resetearContadores()
         perfilViewModel.limpiarEstado()
+
+        // Limpiar cache específico del usuario anterior
+        usuarioAnterior?.let {
+            // Aquí podrías añadir lógica para limpiar cache de Coil si es necesario
+            println("DEBUG - Sesión cerrada para usuario: ${it.username}")
+        }
     }
 
     // BackHandler global
@@ -104,12 +120,15 @@ fun AppNavigation(
         println("DEBUG - Pantalla actual: $pantallaActual")
         println("DEBUG - Usuario logueado: ${usuarioLogueado?.username} - Tipo: ${usuarioLogueado?.tipoUsuario}")
         println("DEBUG - Pila de navegación: $navigationStack")
+        println("DEBUG - Foto de perfil del usuario: ${usuarioLogueado?.fotoPerfil}")
     }
 
     LaunchedEffect(usuarioLogueado) {
         // Limpiar estado del perfil cuando cambia el usuario
         if (usuarioLogueado != null) {
             perfilViewModel.limpiarEstado()
+            // Cargar foto de perfil del nuevo usuario
+            perfilViewModel.cargarFotoPerfil(usuarioLogueado!!.id)
         }
     }
 

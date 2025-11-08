@@ -64,15 +64,32 @@ class PerfilViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
     fun actualizarFotoPerfil(usuario: Usuario, fotoPerfilUri: String?) {
         viewModelScope.launch {
             try {
+                // Guardar en la base de datos primero
                 usuarioDao.actualizarFotoPerfil(usuario.id, fotoPerfilUri)
-                _fotoPerfilActualizada.value = fotoPerfilUri
-                _mensaje.value = "Foto de perfil actualizada"
 
-                // Actualizar el usuario completo
+                // Actualizar el estado del ViewModel
+                _fotoPerfilActualizada.value = fotoPerfilUri
+
+                // Crear usuario actualizado y emitirlo
                 val usuarioActualizado = usuario.copy(fotoPerfil = fotoPerfilUri)
                 _usuarioActualizado.value = usuarioActualizado
+
+                _mensaje.value = "Foto de perfil actualizada correctamente"
+
             } catch (e: Exception) {
-                _mensaje.value = "Error al actualizar la foto"
+                _mensaje.value = "Error al actualizar la foto: ${e.message}"
+            }
+        }
+    }
+
+    // Añadir metodo para cargar foto de perfil
+    fun cargarFotoPerfil(usuarioId: String) {
+        viewModelScope.launch {
+            try {
+                val fotoUri = usuarioDao.obtenerFotoPerfil(usuarioId)
+                _fotoPerfilActualizada.value = fotoUri
+            } catch (e: Exception) {
+                _mensaje.value = "Error al cargar la foto"
             }
         }
     }

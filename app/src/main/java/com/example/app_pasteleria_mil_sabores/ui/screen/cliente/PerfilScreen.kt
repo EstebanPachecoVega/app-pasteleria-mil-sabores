@@ -53,6 +53,7 @@ fun PerfilScreen(
 
     val mensaje by viewModel.mensaje.collectAsState()
     val usuarioActualizado by viewModel.usuarioActualizado.collectAsState()
+    val fotoPerfilActualizada by viewModel.fotoPerfilActualizada.collectAsState()
     val puedeRealizarCambios = viewModel.puedeRealizarCambiosLimitados()
 
     // Validaciones para el botón Guardar
@@ -80,11 +81,30 @@ fun PerfilScreen(
         else -> ToastType.INFO
     }
 
+    // Efecto para sincronizar la foto actualizada del ViewModel
+    LaunchedEffect(fotoPerfilActualizada) {
+        fotoPerfilActualizada?.let { nuevaUri ->
+            fotoPerfilUri = nuevaUri
+            // Actualizar el usuario globalmente con la nueva foto
+            val usuarioConFotoActualizada = usuario.copy(fotoPerfil = nuevaUri)
+            onUsuarioActualizado(usuarioConFotoActualizada)
+        }
+    }
+
     // Efecto para notificar cuando el usuario se actualice
     LaunchedEffect(usuarioActualizado) {
         usuarioActualizado?.let { actualizado ->
             onUsuarioActualizado(actualizado)
+            // Actualizar el estado local con los nuevos datos
+            username = actualizado.username
+            fechaNacimiento = actualizado.fechaNacimiento ?: ""
+            fotoPerfilUri = actualizado.fotoPerfil
         }
+    }
+
+    // Efecto para cargar la foto al entrar a la pantalla
+    LaunchedEffect(usuario.id) {
+        viewModel.cargarFotoPerfil(usuario.id)
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -206,11 +226,13 @@ fun PerfilScreen(
                 Box(
                     modifier = Modifier.size(120.dp)
                 ) {
-                    if (fotoPerfilUri != null) {
+                    if (!fotoPerfilUri.isNullOrBlank()) {
                         Image(
                             painter = rememberAsyncImagePainter(
                                 ImageRequest.Builder(LocalContext.current)
                                     .data(fotoPerfilUri)
+                                    .diskCacheKey("profile_${usuario.id}")
+                                    .memoryCacheKey("profile_${usuario.id}")
                                     .build()
                             ),
                             contentDescription = "Foto de perfil",
@@ -251,6 +273,12 @@ fun PerfilScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+
+                Text(
+                    text = usuario.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -279,6 +307,7 @@ fun PerfilScreen(
                                 } else {
                                     modoEdicion = !modoEdicion
                                     if (!modoEdicion) {
+                                        // Restaurar valores originales al cancelar
                                         username = usuario.username
                                         fechaNacimiento = usuario.fechaNacimiento ?: ""
                                         password = ""
@@ -375,6 +404,14 @@ fun PerfilScreen(
                                 "⚠️ Has alcanzado el límite máximo de 3 cambios permitidos",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Cambios restantes: ${viewModel.getCambiosRestantes()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }

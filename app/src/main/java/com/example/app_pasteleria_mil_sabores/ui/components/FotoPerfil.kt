@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,13 +23,17 @@ fun FotoPerfilComposable(
 ) {
     val context = LocalContext.current
 
-    // Forzar recarga cuando cambia el usuario
-    val imageRequest = remember (fotoUri, usuarioId) {
-        if (fotoUri != null) {
+    // Clave única que combina usuarioId y timestamp para forzar recarga
+    val cacheKey = remember(fotoUri, usuarioId) {
+        "profile_${usuarioId}_${System.currentTimeMillis()}"
+    }
+
+    val imageRequest = remember(fotoUri, usuarioId) {
+        if (fotoUri != null && fotoUri.isNotBlank()) {
             ImageRequest.Builder(context)
                 .data(fotoUri)
-                .diskCacheKey("profile_$usuarioId") // Clave única por usuario
-                .memoryCacheKey("profile_$usuarioId") // Clave única por usuario
+                .diskCacheKey(cacheKey)
+                .memoryCacheKey(cacheKey)
                 .crossfade(true)
                 .build()
         } else {
@@ -36,7 +41,12 @@ fun FotoPerfilComposable(
         }
     }
 
-    if (fotoUri != null && imageRequest != null) {
+    // Forzar limpieza de cache cuando cambia el usuario
+    LaunchedEffect(usuarioId) {
+        // Limpiar cache anterior si es necesario
+    }
+
+    if (fotoUri != null && fotoUri.isNotBlank() && imageRequest != null) {
         Image(
             painter = rememberAsyncImagePainter(
                 model = imageRequest,
