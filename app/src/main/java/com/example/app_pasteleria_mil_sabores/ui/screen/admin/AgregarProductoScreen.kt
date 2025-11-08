@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,8 +24,13 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 fun AgregarProductoScreen(
     productoViewModel: ProductoViewModel,
     onCancelar: () -> Unit,
-    onGuardarExitoso: () -> Unit
+    onGuardarExitoso: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var precio by remember { mutableStateOf("") }

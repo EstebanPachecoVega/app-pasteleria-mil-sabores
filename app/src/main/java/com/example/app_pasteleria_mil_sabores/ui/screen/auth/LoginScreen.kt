@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -22,8 +23,13 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 fun LoginScreen(
     viewModel: FormularioViewModel,
     onRegistrarClick: () -> Unit,
-    onLoginExitoso: (Usuario) -> Unit
+    onLoginExitoso: (Usuario) -> Unit,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var mostrarRecuperarPassword by remember { mutableStateOf(false) }

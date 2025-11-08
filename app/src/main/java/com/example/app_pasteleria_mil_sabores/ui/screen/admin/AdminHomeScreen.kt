@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,8 +35,13 @@ fun AdminHomeScreen(
     viewModel: FormularioViewModel,
     productoViewModel: ProductoViewModel,
     onCerrarSesion: () -> Unit,
-    onGestionarProductos: () -> Unit
+    onGestionarProductos: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     val usuariosState = viewModel.usuarios.collectAsState()
     val usuarios = usuariosState.value
     var showLogoutDialog by remember { mutableStateOf(false) }

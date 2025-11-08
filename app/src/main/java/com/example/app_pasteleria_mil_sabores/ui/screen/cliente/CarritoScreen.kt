@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,8 +40,13 @@ fun CarritoScreen(
     onContinuarCompra: () -> Unit,
     onCheckout: () -> Unit,
     viewModel: CarritoViewModel,
-    usuarioActual: com.example.app_pasteleria_mil_sabores.model.Usuario? = null
+    usuarioActual: Usuario?,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     val cartItems by viewModel.cartItems.collectAsState()
     val resumen by viewModel.resumenCarrito.collectAsState()
     val itemCount by viewModel.itemCount.collectAsState()

@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -32,8 +33,13 @@ fun DetalleProductoScreen(
     producto: Producto,
     onVolver: () -> Unit,
     carritoViewModel: CarritoViewModel,
-    proximamente: Boolean = false
+    proximamente: Boolean = false,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     var cantidad by remember {
         mutableStateOf(if (producto.stock > 0 && !proximamente) "1" else "0")
     }

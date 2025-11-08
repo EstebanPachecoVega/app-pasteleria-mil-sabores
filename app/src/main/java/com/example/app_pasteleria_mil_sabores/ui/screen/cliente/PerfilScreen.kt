@@ -1,6 +1,7 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,7 +31,7 @@ import com.example.app_pasteleria_mil_sabores.ui.components.PasswordTextField
 import com.example.app_pasteleria_mil_sabores.ui.components.ToastType
 import com.example.app_pasteleria_mil_sabores.utils.Validaciones
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
-import kotlinx.coroutines.delay
+import android.R as AndroidR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +39,8 @@ fun PerfilScreen(
     usuario: Usuario,
     viewModel: PerfilViewModel,
     onVolver: () -> Unit,
-    onUsuarioActualizado: (Usuario) -> Unit
+    onUsuarioActualizado: (Usuario) -> Unit,
+    onBackPressed: () -> Unit
 ) {
     var username by remember { mutableStateOf(usuario.username) }
     var fechaNacimiento by remember { mutableStateOf(usuario.fechaNacimiento ?: "") }
@@ -47,11 +49,29 @@ fun PerfilScreen(
     var mostrarDialogoPassword by remember { mutableStateOf(false) }
     var fotoPerfilUri by remember { mutableStateOf(usuario.fotoPerfil) }
     var modoEdicion by remember { mutableStateOf(false) }
+    var mostrarDialogoDescartar by remember { mutableStateOf(false) }
 
     val mensaje by viewModel.mensaje.collectAsState()
-    val cambiosRealizados by viewModel.cambiosLimitadosRealizados.collectAsState()
     val usuarioActualizado by viewModel.usuarioActualizado.collectAsState()
     val puedeRealizarCambios = viewModel.puedeRealizarCambiosLimitados()
+
+    // Validaciones para el botón Guardar
+    val cambiosValidos = (username != usuario.username ||
+            fechaNacimiento != (usuario.fechaNacimiento ?: "")) &&
+            username.isNotBlank() &&
+            username.length >= 3 &&
+            (fechaNacimiento.isBlank() ||
+                    (Validaciones.validarFechaNacimiento(fechaNacimiento) &&
+                            Validaciones.esMayorDe17Anios(fechaNacimiento)))
+
+    // Función para verificar si hay cambios sin guardar REALES
+    fun hayCambiosSinGuardar(): Boolean {
+        val hayCambiosUsername = username != usuario.username
+        val hayCambiosFecha = fechaNacimiento != (usuario.fechaNacimiento ?: "")
+        val hayCambiosPassword = password.isNotBlank() || confirmarPassword.isNotBlank()
+
+        return hayCambiosUsername || hayCambiosFecha || hayCambiosPassword
+    }
 
     // Determinar el tipo de mensaje para el toast
     val toastType = when {
@@ -76,16 +96,98 @@ fun PerfilScreen(
         }
     }
 
+    // BackHandler personalizado para esta pantalla
+    BackHandler (enabled = true) {
+        if (modoEdicion && hayCambiosSinGuardar()) {
+            mostrarDialogoDescartar = true
+        } else {
+            onVolver()
+        }
+    }
+
+    // Diálogo para descartar cambios
+    if (mostrarDialogoDescartar) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoDescartar = false },
+            title = { Text("¿Descartar los cambios sin guardar?") },
+            text = { Text("Hay cambios sin guardar. ¿Seguro que quieres descartarlos?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogoDescartar = false
+                        modoEdicion = false
+                        // Restaurar valores originales
+                        username = usuario.username
+                        fechaNacimiento = usuario.fechaNacimiento ?: ""
+                        password = ""
+                        confirmarPassword = ""
+                    }
+                ) {
+                    Text("Descartar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoDescartar = false }
+                ) {
+                    Text("Seguir editando")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil") },
                 navigationIcon = {
-                    IconButton(onClick = onVolver) {
+                    IconButton(
+                        onClick = {
+                            if (modoEdicion && hayCambiosSinGuardar()) {
+                                mostrarDialogoDescartar = true
+                            } else {
+                                onVolver()
+                            }
+                        }
+                    ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (modoEdicion) {
+                FloatingActionButton(
+                    onClick = {
+                        if (cambiosValidos) {
+                            val usuarioActualizado = usuario.copy(
+                                username = username,
+                                fechaNacimiento = if (fechaNacimiento.isNotBlank()) fechaNacimiento else null
+                            )
+                            val esCambioLimitado = fechaNacimiento != (usuario.fechaNacimiento ?: "")
+                            viewModel.actualizarUsuario(usuarioActualizado, esCambioLimitado)
+                            modoEdicion = false
+                        }
+                    },
+                    modifier = Modifier.size(70.dp),
+                    containerColor = if (cambiosValidos) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = if (cambiosValidos) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Default.Save,
+                            contentDescription = "Guardar cambios",
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            "Guardar",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -119,7 +221,7 @@ fun PerfilScreen(
                         )
                     } else {
                         Image(
-                            painter = painterResource(android.R.drawable.ic_menu_gallery),
+                            painter = painterResource(AndroidR.drawable.ic_menu_gallery),
                             contentDescription = "Sin foto de perfil",
                             modifier = Modifier
                                 .size(120.dp)
@@ -172,11 +274,16 @@ fun PerfilScreen(
 
                         Button(
                             onClick = {
-                                modoEdicion = !modoEdicion
-                                if (!modoEdicion) {
-                                    // Al cancelar edición, restaurar valores originales
-                                    username = usuario.username
-                                    fechaNacimiento = usuario.fechaNacimiento ?: ""
+                                if (modoEdicion && hayCambiosSinGuardar()) {
+                                    mostrarDialogoDescartar = true
+                                } else {
+                                    modoEdicion = !modoEdicion
+                                    if (!modoEdicion) {
+                                        username = usuario.username
+                                        fechaNacimiento = usuario.fechaNacimiento ?: ""
+                                        password = ""
+                                        confirmarPassword = ""
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -194,17 +301,14 @@ fun PerfilScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ID
                     InfoItem("ID", usuario.id)
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Nombre de usuario
                     if (modoEdicion) {
                         OutlinedTextField(
                             value = username,
                             onValueChange = {
-                                // Filtrar espacios automáticamente
                                 if (!it.contains(" ")) {
                                     username = it
                                 }
@@ -228,12 +332,10 @@ fun PerfilScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Correo electrónico
                     InfoItem("Correo electrónico", usuario.email)
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Fecha de nacimiento
                     if (modoEdicion) {
                         DatePickerField(
                             value = fechaNacimiento,
@@ -246,18 +348,11 @@ fun PerfilScreen(
                                     (!Validaciones.validarFechaNacimiento(fechaNacimiento) ||
                                             !Validaciones.esMayorDe17Anios(fechaNacimiento)),
                             supportingText = {
-                                if (modoEdicion) {
-                                    Text(
-                                        "Cambios restantes: ${3 - cambiosRealizados}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (puedeRealizarCambios) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                                    )
-                                }
                                 if (fechaNacimiento.isNotBlank() && modoEdicion) {
                                     when {
                                         !Validaciones.validarFechaNacimiento(fechaNacimiento) -> {
                                             Text(
-                                                "Formato inválido. Use dd/MM/yyyy",
+                                                "Formato no válido. Use dd/MM/yyyy",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.error
                                             )
@@ -273,6 +368,16 @@ fun PerfilScreen(
                                 }
                             }
                         )
+
+                        if (!puedeRealizarCambios) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "⚠️ Has alcanzado el límite máximo de 3 cambios permitidos",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     } else {
                         InfoItem(
                             "Fecha de nacimiento",
@@ -284,10 +389,13 @@ fun PerfilScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botón Cambiar Contraseña (solo visible en modo edición)
             if (modoEdicion) {
                 Button(
-                    onClick = { mostrarDialogoPassword = true },
+                    onClick = {
+                        if (puedeRealizarCambios) {
+                            mostrarDialogoPassword = true
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = puedeRealizarCambios
                 ) {
@@ -299,7 +407,6 @@ fun PerfilScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Sección de Beneficios
             if (usuario.codigoPromocion != null || usuario.esEstudianteDuoc || usuario.esProfesorDuoc) {
                 Card(
                     modifier = Modifier.fillMaxWidth()
@@ -327,7 +434,6 @@ fun PerfilScreen(
                             )
                         }
 
-                        // BENEFICIO DE CUMPLEAÑOS - SIEMPRE VISIBLE PARA ESTUDIANTES DUOC
                         if (usuario.esEstudianteDuoc) {
                             BenefitItem(
                                 icon = Icons.Default.Cake,
@@ -351,82 +457,27 @@ fun PerfilScreen(
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // Información de cambios (solo visible en modo edición)
-            if (modoEdicion) {
-                if (!puedeRealizarCambios) {
-                    Text(
-                        "Has alcanzado el límite de cambios permitidos (3)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    Text(
-                        "Cambios de información realizados: $cambiosRealizados/3",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Botón Guardar Cambios (solo visible en modo edición)
-                Button(
-                    onClick = {
-                        val usuarioActualizado = usuario.copy(
-                            username = username,
-                            fechaNacimiento = if (fechaNacimiento.isNotBlank()) fechaNacimiento else null
-                        )
-                        val esCambioLimitado = fechaNacimiento != (usuario.fechaNacimiento ?: "")
-                        viewModel.actualizarUsuario(usuarioActualizado, esCambioLimitado)
-                        modoEdicion = false
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = (username != usuario.username || fechaNacimiento != (usuario.fechaNacimiento ?: "")) &&
-                            username.isNotBlank() &&
-                            username.length >= 3 &&
-                            (fechaNacimiento.isBlank() ||
-                                    (Validaciones.validarFechaNacimiento(fechaNacimiento) &&
-                                            Validaciones.esMayorDe17Anios(fechaNacimiento)))
-                ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Guardar Cambios")
-                }
             }
         }
     }
 
-    // CenteredToast para mensajes
     CenteredToast(
         message = mensaje,
         onDismiss = { viewModel.limpiarMensaje() },
         type = toastType,
-        duration = 1000 // 3 segundos para mensajes importantes
+        duration = 3000
     )
 
-    // Diálogo para cambiar contraseña
     if (mostrarDialogoPassword) {
         CambiarPasswordDialog(
             password = password,
             confirmarPassword = confirmarPassword,
             onPasswordChange = {
-                // Filtrar espacios automáticamente
                 if (!it.contains(" ")) {
                     password = it
                 }
             },
             onConfirmarPasswordChange = {
-                // Filtrar espacios automáticamente
                 if (!it.contains(" ")) {
                     confirmarPassword = it
                 }

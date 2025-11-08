@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -18,8 +19,13 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 fun RegistroScreen(
     viewModel: FormularioViewModel,
     onRegistroExitoso: () -> Unit,
-    onVolver: () -> Unit
+    onVolver: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

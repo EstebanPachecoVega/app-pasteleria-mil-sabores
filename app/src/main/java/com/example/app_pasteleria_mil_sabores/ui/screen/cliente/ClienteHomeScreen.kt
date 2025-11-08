@@ -22,8 +22,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
@@ -34,7 +32,9 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.ui.components.DialogoConfirmacionLogout
 import com.example.app_pasteleria_mil_sabores.ui.components.ItemMenuCerrarSesion
 import com.example.app_pasteleria_mil_sabores.ui.components.BotonAgregarCarrito
-import com.example.app_pasteleria_mil_sabores.ui.components.EstadoProducto
+import com.example.app_pasteleria_mil_sabores.ui.components.FotoPerfilComposable
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,13 +48,20 @@ fun ClienteHomeScreen(
     onVerCarrito: () -> Unit,
     onVerPedidos: () -> Unit,
     onVerSoporte: () -> Unit,
-    onVerDetalleProducto: (Producto) -> Unit
+    onVerDetalleProducto: (Producto) -> Unit,
+    onBackPressed: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     val productos by productoViewModel.productos.collectAsState()
     val itemCount by carritoViewModel.itemCount.collectAsState()
+    val context = LocalContext.current
+
+    // BackHandler para esta pantalla - MINIMIZAR APP desde Home
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
 
     LaunchedEffect(Unit) {
         productoViewModel.cargarProductos()
@@ -116,22 +123,13 @@ fun ClienteHomeScreen(
                 actions = {
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            if (usuario.fotoPerfil != null) { // ← Esto ahora estará actualizado
-                                Image(
-                                    painter = rememberAsyncImagePainter(
-                                        ImageRequest.Builder(LocalContext.current)
-                                            .data(usuario.fotoPerfil)
-                                            .build()
-                                    ),
-                                    contentDescription = "Foto de perfil",
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Icon(Icons.Default.AccountCircle, contentDescription = "Perfil")
-                            }
+                            FotoPerfilComposable(
+                                fotoUri = usuario.fotoPerfil,
+                                usuarioId = usuario.id,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                            )
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -209,6 +207,7 @@ fun ClienteHomeScreen(
     }
 }
 
+// Los composables ProductoCard y demás permanecen igual...
 @Composable
 fun ProductoCard(
     producto: Producto,
@@ -231,7 +230,6 @@ fun ProductoCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Imagen
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -292,7 +290,6 @@ fun ProductoCard(
                     }
                 )
 
-                // Solo mostrar "Agotado" o "Próximamente"
                 if (producto.stock <= 0 || proximamente) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -307,7 +304,6 @@ fun ProductoCard(
                 }
             }
 
-            // Botón Agregar Carrito
             BotonAgregarCarrito(
                 producto = producto,
                 onAgregarAlCarrito = { producto, cantidad -> onAgregarAlCarrito(producto) },

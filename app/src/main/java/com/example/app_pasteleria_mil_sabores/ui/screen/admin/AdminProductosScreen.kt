@@ -1,5 +1,6 @@
 package com.example.app_pasteleria_mil_sabores.ui.screen.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,8 +29,13 @@ fun AdminProductosScreen(
     viewModel: FormularioViewModel,
     productoViewModel: ProductoViewModel,
     onVolver: () -> Unit,
-    onAgregarProducto: () -> Unit
+    onAgregarProducto: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
+    BackHandler (enabled = true) {
+        onBackPressed()
+    }
+
     val productos by productoViewModel.productos.collectAsState()
     val cargando by productoViewModel.cargando.collectAsState()
 
