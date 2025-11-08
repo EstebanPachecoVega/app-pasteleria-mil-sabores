@@ -3,16 +3,15 @@ package com.example.app_pasteleria_mil_sabores.ui.screen.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.app_pasteleria_mil_sabores.ui.components.DatePickerField
+import com.example.app_pasteleria_mil_sabores.ui.components.PasswordTextField
+import com.example.app_pasteleria_mil_sabores.utils.Validaciones
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 
 @Composable
@@ -27,19 +26,18 @@ fun RegistroScreen(
     var confirmarPassword by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
     var codigoPromocional by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmarPasswordVisible by remember { mutableStateOf(false) }
 
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val usernameValido = username.isNotBlank() && username.length >= 3
+    // USANDO LAS VALIDACIONES REUTILIZABLES
+    val usernameValido = Validaciones.validarUsername(username)
     val emailValido = email.isNotBlank() && (
             email.endsWith("@duoc.cl", ignoreCase = true) ||
                     email.endsWith("@profesor.duoc.cl", ignoreCase = true) ||
                     email.endsWith("@gmail.com", ignoreCase = true) ||
                     email.equals("admin@duoc.cl", ignoreCase = true)
             )
-    val passwordValido = password.length >= 6
+    val passwordValido = Validaciones.validarPassword(password)
     val confirmarPasswordValido = confirmarPassword == password
     val formularioValido = usernameValido && emailValido && passwordValido && confirmarPasswordValido
 
@@ -60,14 +58,19 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    username = it
+                }
+            },
             label = { Text("Nombre de usuario") },
             placeholder = { Text("Ingrese su nombre de usuario") },
             isError = username.isNotBlank() && !usernameValido,
             supportingText = {
                 if (username.isNotBlank() && !usernameValido) {
                     Text(
-                        text = "Mínimo 3 caracteres",
+                        text = "Mínimo 3 caracteres sin espacios",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -108,15 +111,43 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // DatePicker para fecha de nacimiento
+        DatePickerField(
             value = fechaNacimiento,
-            onValueChange = { fechaNacimiento = it },
-            label = { Text("Fecha de nacimiento (opcional)") },
-            placeholder = { Text("dd/MM/yyyy") },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            ),
+            onValueChange = { nuevaFecha ->
+                fechaNacimiento = nuevaFecha
+            },
+            label = "Fecha de nacimiento (opcional)",
+            isError = fechaNacimiento.isNotBlank() &&
+                    (!Validaciones.validarFechaNacimiento(fechaNacimiento) ||
+                            !Validaciones.esMayorDe17Anios(fechaNacimiento)),
+            supportingText = {
+                if (fechaNacimiento.isNotBlank()) {
+                    when {
+                        !Validaciones.validarFechaNacimiento(fechaNacimiento) -> {
+                            Text(
+                                "Formato no válido. Use dd/MM/yyyy",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        !Validaciones.esMayorDe17Anios(fechaNacimiento) -> {
+                            val edad = Validaciones.obtenerEdad(fechaNacimiento)
+                            Text(
+                                "Debes tener 17 años o más.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "Opcional - Haz clic para seleccionar fecha",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             modifier = Modifier.fillMaxWidth(0.8f)
         )
 
@@ -162,54 +193,42 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // Campo contraseña con validación de espacios
+        PasswordTextField(
             value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    password = it
                 }
             },
+            label = "Contraseña",
+            modifier = Modifier.fillMaxWidth(0.8f),
             isError = password.isNotBlank() && !passwordValido,
             supportingText = {
                 if (password.isNotBlank() && !passwordValido) {
                     Text(
-                        text = "Mínimo 6 caracteres",
+                        text = "Mínimo 6 caracteres sin espacios",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = MaterialTheme.colorScheme.error,
-            ),
-            modifier = Modifier.fillMaxWidth(0.8f)
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // Campo confirmar contraseña con validación de espacios
+        PasswordTextField(
             value = confirmarPassword,
-            onValueChange = { confirmarPassword = it },
-            label = { Text("Confirmar Contraseña") },
-            visualTransformation = if (confirmarPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { confirmarPasswordVisible = !confirmarPasswordVisible }) {
-                    Icon(
-                        imageVector = if (confirmarPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (confirmarPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    confirmarPassword = it
                 }
             },
+            label = "Confirmar Contraseña",
+            modifier = Modifier.fillMaxWidth(0.8f),
             isError = confirmarPassword.isNotBlank() && !confirmarPasswordValido,
             supportingText = {
                 if (confirmarPassword.isNotBlank()) {
@@ -219,13 +238,7 @@ fun RegistroScreen(
                         color = if (confirmarPasswordValido) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
                 }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = MaterialTheme.colorScheme.error,
-            ),
-            modifier = Modifier.fillMaxWidth(0.8f)
+            }
         )
 
         errorMessage?.let { message ->

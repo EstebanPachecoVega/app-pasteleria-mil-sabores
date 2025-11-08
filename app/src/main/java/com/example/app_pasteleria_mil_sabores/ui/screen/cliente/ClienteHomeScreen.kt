@@ -116,7 +116,7 @@ fun ClienteHomeScreen(
                 actions = {
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            if (usuario.fotoPerfil != null) {
+                            if (usuario.fotoPerfil != null) { // ← Esto ahora estará actualizado
                                 Image(
                                     painter = rememberAsyncImagePainter(
                                         ImageRequest.Builder(LocalContext.current)

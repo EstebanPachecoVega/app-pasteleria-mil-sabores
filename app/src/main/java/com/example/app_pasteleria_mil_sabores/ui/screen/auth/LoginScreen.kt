@@ -2,9 +2,6 @@ package com.example.app_pasteleria_mil_sabores.ui.screen.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.app_pasteleria_mil_sabores.ui.components.PasswordTextField
+import com.example.app_pasteleria_mil_sabores.utils.Validaciones
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 
@@ -30,7 +27,6 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var mostrarRecuperarPassword by remember { mutableStateOf(false) }
-    var passwordVisible by remember { mutableStateOf(false) }
 
     val usuarioActual by viewModel.usuarioActual.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -41,7 +37,7 @@ fun LoginScreen(
                     email.endsWith("@gmail.com", ignoreCase = true) ||
                     email.equals("admin@duoc.cl", ignoreCase = true)
             )
-    val passwordValido = password.length >= 6
+    val passwordValido = Validaciones.validarPassword(password)
     val formularioValido = emailValido && passwordValido
 
     LaunchedEffect(usuarioActual) {
@@ -99,37 +95,27 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
+            // Campo contraseña
+            PasswordTextField(
                 value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                placeholder = { Text("Ingrese su contraseña") },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                onValueChange = {
+                    // Filtrar espacios automáticamente
+                    if (!it.contains(" ")) {
+                        password = it
                     }
                 },
+                label = "Contraseña",
+                modifier = Modifier.fillMaxWidth(0.8f),
                 isError = password.isNotBlank() && !passwordValido,
                 supportingText = {
                     if (password.isNotBlank() && !passwordValido) {
                         Text(
-                            text = "Mínimo 6 carácteres",
+                            text = "Mínimo 6 caracteres sin espacios",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )
                     }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    errorBorderColor = MaterialTheme.colorScheme.error,
-                ),
-                modifier = Modifier.fillMaxWidth(0.8f)
+                }
             )
 
             errorMessage?.let { message ->

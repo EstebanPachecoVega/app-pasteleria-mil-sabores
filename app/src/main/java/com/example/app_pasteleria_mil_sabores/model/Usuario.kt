@@ -2,6 +2,7 @@ package com.example.app_pasteleria_mil_sabores.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.util.Calendar
 
 @Entity(tableName = "Usuario")
 data class Usuario(
@@ -41,13 +42,13 @@ data class Usuario(
             val month = parts[1].toInt()
             val year = parts[2].toInt()
 
-            val today = java.util.Calendar.getInstance()
-            val birthDate = java.util.Calendar.getInstance().apply {
+            val today = Calendar.getInstance()
+            val birthDate = Calendar.getInstance().apply {
                 set(year, month - 1, day)
             }
 
-            var age = today.get(java.util.Calendar.YEAR) - birthDate.get(java.util.Calendar.YEAR)
-            if (today.get(java.util.Calendar.DAY_OF_YEAR) < birthDate.get(java.util.Calendar.DAY_OF_YEAR)) {
+            var age = today.get(Calendar.YEAR) - birthDate.get(Calendar.YEAR)
+            if (today.get(Calendar.DAY_OF_YEAR) < birthDate.get(Calendar.DAY_OF_YEAR)) {
                 age--
             }
             age
@@ -59,15 +60,16 @@ data class Usuario(
     fun esSuCumpleanos(): Boolean {
         if (fechaNacimiento == null) return false
         return try {
-            val today = java.util.Calendar.getInstance()
+            val today = Calendar.getInstance()
             val parts = fechaNacimiento.split("/")
             if (parts.size != 3) return false
 
             val day = parts[0].toInt()
             val month = parts[1].toInt()
 
-            today.get(java.util.Calendar.DAY_OF_MONTH) == day &&
-                    (today.get(java.util.Calendar.MONTH) + 1) == month
+            // Verificar si hoy es el cumpleaños (día y mes coinciden)
+            today.get(Calendar.DAY_OF_MONTH) == day &&
+                    (today.get(Calendar.MONTH) + 1) == month
         } catch (e: Exception) {
             false
         }

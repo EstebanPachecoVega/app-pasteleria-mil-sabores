@@ -45,12 +45,18 @@ fun AppNavigation(
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
 
+    // Función para actualizar el usuario logueado
+    fun actualizarUsuarioLogueado(usuarioActualizado: Usuario) {
+        usuarioLogueado = usuarioActualizado
+    }
+
     // Función para cerrar sesión
     fun cerrarSesion() {
         usuarioLogueado = null
         pantallaActual = Pantallas.LOGIN
         viewModel.cerrarSesion()
         carritoViewModel.limpiarCarrito()
+        perfilViewModel.resetearContadores() // Resetear contadores al cerrar sesión
     }
 
     LaunchedEffect(pantallaActual) {
@@ -197,6 +203,10 @@ fun AppNavigation(
                     viewModel = perfilViewModel,
                     onVolver = {
                         pantallaActual = Pantallas.PRINCIPAL
+                    },
+                    onUsuarioActualizado = { usuarioActualizado ->
+                        // Actualizar el usuario en el estado global
+                        actualizarUsuarioLogueado(usuarioActualizado)
                     }
                 )
             } ?: run {
