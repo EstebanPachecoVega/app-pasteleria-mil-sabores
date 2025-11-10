@@ -12,6 +12,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.example.app_pasteleria_mil_sabores.data.PedidoRepository
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminHomeScreen
@@ -25,11 +26,14 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.PagoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.ResumenPedidoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.CarritoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.ClienteHomeScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetallePedidoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetalleProductoScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.MisPedidosScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.PerfilScreen
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.PedidoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
@@ -46,7 +50,9 @@ enum class Pantallas {
     RESUMEN_PEDIDO,
     INFORMACION_ENVIO,
     PAGO,
-    CONFIRMACION_PEDIDO
+    CONFIRMACION_PEDIDO,
+    MIS_PEDIDOS,
+    DETALLE_PEDIDO
 }
 
 @Composable
@@ -55,11 +61,13 @@ fun AppNavigation(
     productoViewModel: ProductoViewModel,
     carritoViewModel: CarritoViewModel,
     perfilViewModel: PerfilViewModel,
-    checkoutViewModel: CheckoutViewModel
+    checkoutViewModel: CheckoutViewModel,
+    pedidoViewModel: PedidoViewModel
 ) {
     var pantallaActual by remember { mutableStateOf(Pantallas.LOGIN) }
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
+    var pedidoSeleccionadoId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     // Obtener estados del carrito
@@ -119,6 +127,7 @@ fun AppNavigation(
         perfilViewModel.resetearContadores()
         perfilViewModel.limpiarEstado()
         checkoutViewModel.limpiarCheckout()
+        pedidoViewModel.limpiarPedidoSeleccionado()
 
         // Limpiar cache específico del usuario anterior
         usuarioAnterior?.let {
@@ -193,7 +202,7 @@ fun AppNavigation(
                     onCerrarSesion = { cerrarSesion() },
                     onVerPerfil = { navigateTo(Pantallas.PERFIL) },
                     onVerCarrito = { navigateTo(Pantallas.CARRITO) },
-                    onVerPedidos = { /* Navegar a pedidos */ },
+                    onVerPedidos = { navigateTo(Pantallas.MIS_PEDIDOS) },
                     onVerSoporte = { /* Navegar a soporte */ },
                     onVerDetalleProducto = { producto ->
                         productoSeleccionado = producto
@@ -367,6 +376,36 @@ fun AppNavigation(
                 )
             } ?: run {
                 navigateTo(Pantallas.LOGIN)
+            }
+        }
+
+        Pantallas.MIS_PEDIDOS -> {
+            usuarioLogueado?.let { usuario ->
+                MisPedidosScreen (
+                    pedidoViewModel = pedidoViewModel,
+                    usuario = usuario,
+                    onVolver = { navigateBack() },
+                    onVerDetallePedido = { pedidoId ->
+                        pedidoSeleccionadoId = pedidoId
+                        navigateTo(Pantallas.DETALLE_PEDIDO)
+                    },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
+            }
+        }
+
+        Pantallas.DETALLE_PEDIDO -> {
+            pedidoSeleccionadoId?.let { id ->
+                DetallePedidoScreen (
+                    pedidoId = id,
+                    pedidoViewModel = pedidoViewModel,
+                    onVolver = { navigateBack() },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.MIS_PEDIDOS)
             }
         }
     }

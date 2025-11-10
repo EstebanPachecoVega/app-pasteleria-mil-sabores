@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.room.Room
 import com.example.app_pasteleria_mil_sabores.data.PasteleriaDatabase
+import com.example.app_pasteleria_mil_sabores.data.PedidoRepository
 import com.example.app_pasteleria_mil_sabores.data.ProductoRepository
 import com.example.app_pasteleria_mil_sabores.ui.screen.navigation.AppNavigation
 import com.example.app_pasteleria_mil_sabores.ui.screen.splash.SplashScreen
@@ -18,6 +19,7 @@ import com.example.app_pasteleria_mil_sabores.ui.theme.AppPasteleriaMilSaboresTh
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.PedidoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
@@ -52,6 +54,10 @@ fun FormularioApp() {
         ProductoRepository(database.productoDao())
     }
 
+    val pedidoRepository = remember {
+        PedidoRepository(database.pedidoDao())
+    }
+
     // Inicializar ViewModels
     val usuarioViewModel = remember {
         FormularioViewModel(database.usuarioDao())
@@ -73,6 +79,10 @@ fun FormularioApp() {
         CheckoutViewModel(database.pedidoDao())
     }
 
+    val pedidoViewModel = remember {
+        PedidoViewModel(PedidoRepository(database.pedidoDao()))
+    }
+
     // Estado para splash screen
     val showSplash = remember { mutableStateOf(true) }
 
@@ -86,7 +96,8 @@ fun FormularioApp() {
             productoViewModel = productoViewModel,
             carritoViewModel = carritoViewModel,
             perfilViewModel = perfilViewModel,
-            checkoutViewModel = checkoutViewModel
+            checkoutViewModel = checkoutViewModel,
+            pedidoViewModel = pedidoViewModel
         )
     }
 }
