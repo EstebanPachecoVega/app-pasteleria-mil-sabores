@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import com.example.app_pasteleria_mil_sabores.ui.components.CartItemCard
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,41 @@ fun ResumenPedidoScreen(
 
     val cartItems by carritoViewModel.cartItems.collectAsState()
     val resumen by carritoViewModel.resumenCarrito.collectAsState()
+    val errorMessage by carritoViewModel.errorMessage.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var verificandoStock by remember { mutableStateOf(false) }
+
+    // Función para verificar stock antes de continuar (interna, sin mensajes visibles)
+    fun verificarYContinuar() {
+        verificandoStock = true
+        scope.launch {
+            try {
+                val stockValido = carritoViewModel.verificarStockCarrito()
+                if (stockValido) {
+                    onContinuarEnvio()
+                }
+            } catch (e: Exception) {
+                // Error manejado internamente por el ViewModel
+            } finally {
+                verificandoStock = false
+            }
+        }
+    }
+
+    // Snackbar para mostrar errores de stock (solo cuando hay error)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { mensaje ->
+            snackbarHostState.showSnackbar(
+                message = mensaje,
+                duration = SnackbarDuration.Long
+            )
+            carritoViewModel.limpiarError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -64,6 +99,7 @@ fun ResumenPedidoScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (cartItems.isNotEmpty()) {
                 Surface(
@@ -77,7 +113,7 @@ fun ResumenPedidoScreen(
                             .padding(16.dp)
                             .navigationBarsPadding(),
                     ) {
-                        // Resumen de precios
+                        // Resumen de precios (igual que antes)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -129,8 +165,9 @@ fun ResumenPedidoScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        // Botón con verificación interna de stock
                         Button(
-                            onClick = onContinuarEnvio,
+                            onClick = { verificarYContinuar() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -139,15 +176,25 @@ fun ResumenPedidoScreen(
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = MaterialTheme.shapes.large,
-                            enabled = cartItems.isNotEmpty()
+                            enabled = cartItems.isNotEmpty() && !verificandoStock
                         ) {
-                            Icon(
-                                Icons.Default.LocalShipping,
-                                contentDescription = "Checkout",
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("Continuar con Envío")
+                            if (verificandoStock) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("Procesando...")
+                            } else {
+                                Icon(
+                                    Icons.Default.LocalShipping,
+                                    contentDescription = "Checkout",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("Continuar con Envío")
+                            }
                         }
                     }
                 }
@@ -185,12 +232,12 @@ fun ResumenPedidoScreen(
                     .padding(innerPadding)
                     .navigationBarsPadding()
             ) {
-                // Mostrar descuentos aplicados si existen
+                // Mostrar descuentos aplicados si existen (sin emojis)
                 if (resumen.descuentos.isNotEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
@@ -199,7 +246,7 @@ fun ResumenPedidoScreen(
                             modifier = Modifier.padding(16.dp)
                         ) {
                             Text(
-                                "🎁 Descuentos Aplicados",
+                                "Descuentos Aplicados",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontWeight = FontWeight.Bold
@@ -216,7 +263,7 @@ fun ResumenPedidoScreen(
                                         color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
                                     Text(
-                                        if (descuento.tipo == "ESTUDIANTE_CUMPLEANOS") "GRATIS"
+                                        if (descuento.tipo == "ESTUDIANTE_CUMPLEANOS") "Gratis"
                                         else "-${descuento.porcentaje.toInt()}%",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
@@ -229,7 +276,7 @@ fun ResumenPedidoScreen(
                     }
                 }
 
-                // Lista de productos
+                // Lista de productos (sin información adicional de stock)
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)

@@ -34,12 +34,110 @@ fun ConfirmacionPedidoScreen(
     }
 
     val pedidoActual by checkoutViewModel.pedidoActual.collectAsState()
+    val stockInsuficiente by checkoutViewModel.stockInsuficiente.collectAsState()
+    val errorMessage by checkoutViewModel.errorMessage.collectAsState()
     val scope = rememberCoroutineScope()
     var pedidoConfirmado by remember { mutableStateOf(false) }
     var numeroPedido by remember { mutableStateOf("") }
 
+    // Diálogo para mostrar cuando hay stock insuficiente
+    if (stockInsuficiente.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = {
+                checkoutViewModel.limpiarErroresStock()
+                checkoutViewModel.limpiarError()
+            },
+            title = {
+                Text(
+                    "❌ Stock Insuficiente",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "Los siguientes productos no tienen stock suficiente:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    stockInsuficiente.forEach { producto ->
+                        Text(
+                            "• $producto",
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Por favor ajusta tu carrito y vuelve a intentar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        checkoutViewModel.limpiarErroresStock()
+                        checkoutViewModel.limpiarError()
+                        onBackPressed()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("Ajustar Carrito")
+                }
+            }
+        )
+    }
+
+    // Diálogo para otros errores
+    if (errorMessage != null && stockInsuficiente.isEmpty()) {
+        AlertDialog(
+            onDismissRequest = {
+                checkoutViewModel.limpiarError()
+            },
+            title = {
+                Text(
+                    "Error en el Pedido",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    errorMessage ?: "Ha ocurrido un error inesperado",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        checkoutViewModel.limpiarError()
+                        onBackPressed()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
+
     // Confirmar y guardar el pedido cuando se entra a esta pantalla
     LaunchedEffect(Unit) {
+        checkoutViewModel.limpiarErroresStock()
+        checkoutViewModel.limpiarError()
+
         scope.launch {
             val exito = checkoutViewModel.confirmarYGuardarPedido()
             if (exito) {
@@ -93,15 +191,20 @@ fun ConfirmacionPedidoScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            if (pedidoConfirmado) {
-                // Pantalla de confirmación exitosa
-                ConfirmacionExitosa(
-                    numeroPedido = numeroPedido,
-                    pedido = pedidoActual,
-                    usuario = usuario
-                )
+            // Mostrar contenido si no hay errores de stock
+            if (stockInsuficiente.isEmpty() && errorMessage == null) {
+                if (pedidoConfirmado) {
+                    // Pantalla de confirmación exitosa
+                    ConfirmacionExitosa(
+                        numeroPedido = numeroPedido,
+                        pedido = pedidoActual,
+                        usuario = usuario
+                    )
+                } else {
+                    CargandoConfirmacion()
+                }
             } else {
-                // Pantalla de carga
+                // Mostrar mensaje de carga mientras se procesa (los diálogos se encargan de los errores)
                 CargandoConfirmacion()
             }
         }

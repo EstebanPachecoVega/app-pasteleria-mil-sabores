@@ -35,4 +35,13 @@ interface ProductoDao {
 
     @Query("SELECT DISTINCT categoria FROM Producto WHERE activo = 1")
     fun obtenerCategorias(): Flow<List<String>>
+
+    @Query("UPDATE Producto SET stock = stock - :cantidad WHERE id = :productoId AND stock >= :cantidad")
+    suspend fun descontarStock(productoId: String, cantidad: Int): Int
+
+    @Query("SELECT stock FROM Producto WHERE id = :productoId")
+    suspend fun obtenerStock(productoId: String): Int?
+
+    @Query("UPDATE Producto SET stock = :nuevoStock WHERE id = :productoId")
+    suspend fun actualizarStock(productoId: String, nuevoStock: Int)
 }

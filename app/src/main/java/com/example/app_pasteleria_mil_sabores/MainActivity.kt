@@ -49,7 +49,6 @@ fun FormularioApp() {
             .build()
     }
 
-    // Inicializar repositorios
     val productoRepository = remember {
         ProductoRepository(database.productoDao())
     }
@@ -68,7 +67,7 @@ fun FormularioApp() {
     }
 
     val carritoViewModel = remember {
-        CarritoViewModel()
+        CarritoViewModel(productoRepository)
     }
 
     val perfilViewModel = remember {
@@ -76,7 +75,10 @@ fun FormularioApp() {
     }
 
     val checkoutViewModel = remember {
-        CheckoutViewModel(database.pedidoDao())
+        CheckoutViewModel(
+            pedidoDao = database.pedidoDao(),
+            productoRepository = productoRepository
+        )
     }
 
     val pedidoViewModel = remember {

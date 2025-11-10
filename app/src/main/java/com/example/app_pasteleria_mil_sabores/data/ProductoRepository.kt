@@ -57,7 +57,7 @@ class ProductoRepository(private val productoDao: ProductoDao) {
                 precio = 47000,
                 imagen = "cheesecake_sin_azucar",
                 categoria = "sin_azucar",
-                stock = 6,
+                stock = 1,
                 destacado = false
             ),
 
@@ -215,4 +215,21 @@ class ProductoRepository(private val productoDao: ProductoDao) {
     fun buscar(query: String): Flow<List<Producto>> = productoDao.buscar(query)
 
     fun obtenerCategorias(): Flow<List<String>> = productoDao.obtenerCategorias()
+
+    suspend fun descontarStock(productoId: String, cantidad: Int): Boolean {
+        return productoDao.descontarStock(productoId, cantidad) > 0
+    }
+
+    suspend fun obtenerStock(productoId: String): Int? {
+        return productoDao.obtenerStock(productoId)
+    }
+
+    suspend fun actualizarStock(productoId: String, nuevoStock: Int) {
+        productoDao.actualizarStock(productoId, nuevoStock)
+    }
+
+    suspend fun verificarStockSuficiente(productoId: String, cantidadRequerida: Int): Boolean {
+        val stockActual = obtenerStock(productoId)
+        return stockActual != null && stockActual >= cantidadRequerida
+    }
 }

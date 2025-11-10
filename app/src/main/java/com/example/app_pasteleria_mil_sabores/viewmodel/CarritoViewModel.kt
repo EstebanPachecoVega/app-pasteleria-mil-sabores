@@ -2,6 +2,7 @@ package com.example.app_pasteleria_mil_sabores.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.app_pasteleria_mil_sabores.data.ProductoRepository
 import com.example.app_pasteleria_mil_sabores.model.CartItem
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.model.Producto
@@ -26,7 +27,9 @@ data class ResumenCarrito(
     val descuentos: List<Descuento>
 )
 
-class CarritoViewModel : ViewModel() {
+class CarritoViewModel(
+    private val productoRepository: ProductoRepository
+) : ViewModel() {
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
 
@@ -164,6 +167,14 @@ class CarritoViewModel : ViewModel() {
     fun agregarProducto(producto: Producto, cantidad: Int) {
         viewModelScope.launch {
             try {
+                // Verificar stock antes de agregar
+                val stockDisponible = productoRepository.obtenerStock(producto.id) ?: 0
+
+                if (cantidad > stockDisponible) {
+                    _errorMessage.value = "Stock insuficiente. Solo quedan $stockDisponible unidades"
+                    return@launch
+                }
+
                 val currentItems = _cartItems.value.toMutableList()
                 val usuario = _usuarioActual.value
 
@@ -266,6 +277,14 @@ class CarritoViewModel : ViewModel() {
                 if (itemIndex != -1) {
                     val item = currentItems[itemIndex]
 
+                    // Verificar stock antes de actualizar
+                    val stockDisponible = productoRepository.obtenerStock(productoId) ?: 0
+
+                    if (nuevaCantidad > stockDisponible) {
+                        _errorMessage.value = "Stock insuficiente. Solo quedan $stockDisponible unidades"
+                        return@launch
+                    }
+
                     // Validación para tortas en cumpleaños
                     if (esTorta(item.producto) && _usuarioActual.value?.esEstudianteDuoc == true &&
                         _usuarioActual.value?.esSuCumpleanos() == true) {
@@ -316,6 +335,22 @@ class CarritoViewModel : ViewModel() {
                 _errorMessage.value = "Error al limpiar carrito: ${e.message}"
             }
         }
+    }
+
+    suspend fun verificarStockCarrito(): Boolean {
+        val currentItems = _cartItems.value
+        for (item in currentItems) {
+            val stockDisponible = productoRepository.obtenerStock(item.producto.id) ?: 0
+            if (item.cantidad > stockDisponible) {
+                _errorMessage.value = "Stock insuficiente para ${item.producto.nombre}. Disponible: $stockDisponible"
+                return false
+            }
+        }
+        return true
+    }
+
+    suspend fun obtenerStockActual(productoId: String): Int? {
+        return productoRepository.obtenerStock(productoId)
     }
 
     fun getCantidadProducto(productoId: String): Int {

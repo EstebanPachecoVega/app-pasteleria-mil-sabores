@@ -3,6 +3,7 @@ package com.example.app_pasteleria_mil_sabores.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app_pasteleria_mil_sabores.data.PedidoDao
+import com.example.app_pasteleria_mil_sabores.data.ProductoRepository
 import com.example.app_pasteleria_mil_sabores.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +11,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class CheckoutViewModel(private val pedidoDao: PedidoDao) : ViewModel() {
+class CheckoutViewModel(
+    private val pedidoDao: PedidoDao,
+    private val productoRepository: ProductoRepository
+) : ViewModel() {
 
     // Estados para el pedido actual
     private val _pedidoActual = MutableStateFlow<Pedido?>(null)
@@ -29,6 +33,9 @@ class CheckoutViewModel(private val pedidoDao: PedidoDao) : ViewModel() {
     // Estados para método de pago
     private val _metodoPago = MutableStateFlow<String?>(null)
     val metodoPago: StateFlow<String?> = _metodoPago.asStateFlow()
+
+    private val _stockInsuficiente = MutableStateFlow<List<String>>(emptyList())
+    val stockInsuficiente: StateFlow<List<String>> = _stockInsuficiente.asStateFlow()
 
     // Estados para UI
     private val _operacionExitosa = MutableStateFlow(false)
@@ -152,6 +159,35 @@ class CheckoutViewModel(private val pedidoDao: PedidoDao) : ViewModel() {
     suspend fun confirmarYGuardarPedido(): Boolean {
         return try {
             _pedidoActual.value?.let { pedido ->
+                // 1. Verificar stock antes de confirmar
+                val productosSinStock = mutableListOf<String>()
+
+                for (item in pedido.productos) {
+                    val stockSuficiente = productoRepository.verificarStockSuficiente(
+                        item.producto.id,
+                        item.cantidad
+                    )
+                    if (!stockSuficiente) {
+                        productosSinStock.add(item.producto.nombre)
+                    }
+                }
+
+                if (productosSinStock.isNotEmpty()) {
+                    _stockInsuficiente.value = productosSinStock
+                    _errorMessage.value = "Stock insuficiente para: ${productosSinStock.joinToString(", ")}"
+                    return false
+                }
+
+                // 2. Descontar stock de cada producto
+                for (item in pedido.productos) {
+                    val exito = productoRepository.descontarStock(item.producto.id, item.cantidad)
+                    if (!exito) {
+                        _errorMessage.value = "Error al actualizar stock para ${item.producto.nombre}"
+                        return false
+                    }
+                }
+
+                // 3. Guardar el pedido
                 val pedidoConfirmado = pedido.copy(estado = "confirmado")
                 pedidoDao.insertar(pedidoConfirmado)
                 _pedidoActual.value = pedidoConfirmado
@@ -226,6 +262,10 @@ class CheckoutViewModel(private val pedidoDao: PedidoDao) : ViewModel() {
 
     fun resetearOperacionExitosa() {
         _operacionExitosa.value = false
+    }
+
+    fun limpiarErroresStock() {
+        _stockInsuficiente.value = emptyList()
     }
 
     // Obtener pedido actual para confirmación
