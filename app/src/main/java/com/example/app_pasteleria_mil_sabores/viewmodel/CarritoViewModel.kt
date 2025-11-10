@@ -55,19 +55,34 @@ class CarritoViewModel : ViewModel() {
         }
     }
 
-    fun calcularDescuentos(usuario: Usuario?): List<Descuento> {
+    // Función para verificar si un producto es una torta
+    private fun esTorta(producto: Producto): Boolean {
+        // Verifica por categoría o nombre que contenga "torta"
+        return producto.categoria.equals("tortas", ignoreCase = true) ||
+                producto.nombre.contains("torta", ignoreCase = true) ||
+                producto.nombre.contains("cake", ignoreCase = true)
+    }
+
+    fun calcularDescuentos(usuario: Usuario?, cartItems: List<CartItem>): List<Descuento> {
         if (usuario == null) return emptyList()
 
         val descuentos = mutableListOf<Descuento>()
+        val tieneTortaEnCarrito = cartItems.any { esTorta(it.producto) }
 
-        // Descuento para estudiantes Duoc en cumpleaños
-        if (usuario.esEstudianteDuoc && usuario.esSuCumpleanos()) {
-            descuentos.add(Descuento(
-                tipo = "ESTUDIANTE_CUMPLEANOS",
-                porcentaje = 100.0,
-                descripcion = "🎂 Torta gratis por cumpleaños",
-                esAplicable = true
-            ))
+        // Descuento para estudiantes Duoc en cumpleaños - SOLO SI HAY TORTA EN CARRITO
+        if (usuario.esEstudianteDuoc && usuario.esSuCumpleanos() && tieneTortaEnCarrito) {
+            // Verificar que no se haya excedido el límite de 1 torta gratis
+            val tortasEnCarrito = cartItems.filter { esTorta(it.producto) }
+            val puedeAplicarDescuento = tortasEnCarrito.size == 1 && tortasEnCarrito[0].cantidad == 1
+
+            if (puedeAplicarDescuento) {
+                descuentos.add(Descuento(
+                    tipo = "ESTUDIANTE_CUMPLEANOS",
+                    porcentaje = 100.0,
+                    descripcion = "🎂 Torta gratis por cumpleaños (1 por cliente)",
+                    esAplicable = true
+                ))
+            }
         }
 
         // Descuento para mayores de 50 años
@@ -94,8 +109,9 @@ class CarritoViewModel : ViewModel() {
         return descuentos
     }
 
+    // Modifica la función calcularResumenCarrito
     private fun calcularResumenCarrito(subtotal: Int, usuario: Usuario? = null) {
-        val descuentos = calcularDescuentos(usuario)
+        val descuentos = calcularDescuentos(usuario, _cartItems.value)
 
         if (descuentos.isEmpty()) {
             _resumenCarrito.value = ResumenCarrito(
@@ -107,15 +123,30 @@ class CarritoViewModel : ViewModel() {
             return
         }
 
-        // Aplicar el descuento más beneficioso
-        val mayorDescuento = descuentos.maxByOrNull { it.porcentaje }
-        val descuentoAplicado = if (mayorDescuento != null && mayorDescuento.esAplicable) {
-            (subtotal * (mayorDescuento.porcentaje / 100)).toInt()
-        } else {
-            0
+        // Para el descuento de torta gratis, aplicar solo al precio de UNA torta
+        val descuentoTorta = descuentos.find { it.tipo == "ESTUDIANTE_CUMPLEANOS" }
+        val otrosDescuentos = descuentos.filter { it.tipo != "ESTUDIANTE_CUMPLEANOS" }
+
+        var descuentoAplicado = 0
+        var total = subtotal
+
+        if (descuentoTorta != null && descuentoTorta.esAplicable) {
+            // Encontrar la primera torta en el carrito y aplicar 100% de descuento solo a esa unidad
+            val tortaEnCarrito = _cartItems.value.find { esTorta(it.producto) }
+            if (tortaEnCarrito != null) {
+                // Solo descontar el precio de 1 torta, no importa la cantidad
+                descuentoAplicado = tortaEnCarrito.producto.precio
+                total = subtotal - descuentoAplicado
+            }
         }
 
-        val total = subtotal - descuentoAplicado
+        // Aplicar otros descuentos si existen
+        val mayorOtroDescuento = otrosDescuentos.maxByOrNull { it.porcentaje }
+        if (mayorOtroDescuento != null && mayorOtroDescuento.esAplicable) {
+            val descuentoAdicional = (total * (mayorOtroDescuento.porcentaje / 100)).toInt()
+            descuentoAplicado += descuentoAdicional
+            total -= descuentoAdicional
+        }
 
         _resumenCarrito.value = ResumenCarrito(
             subtotal = subtotal,
@@ -134,11 +165,52 @@ class CarritoViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val currentItems = _cartItems.value.toMutableList()
+                val usuario = _usuarioActual.value
+
+                // Validación especial para tortas si el usuario tiene descuento de cumpleaños
+                if (esTorta(producto) && usuario?.esEstudianteDuoc == true &&
+                    usuario.esSuCumpleanos() == true) {
+
+                    val tortasEnCarrito = currentItems.filter { esTorta(it.producto) }
+                    val cantidadTotalTortas = tortasEnCarrito.sumOf { it.cantidad }
+
+                    // Limitar a 1 torta gratis por cliente en cumpleaños
+                    if (cantidadTotalTortas >= 1) {
+                        _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                        return@launch
+                    }
+
+                    // Si ya tiene una torta en el carrito y trata de agregar otra, bloquear
+                    val existingTortaIndex = currentItems.indexOfFirst {
+                        it.producto.id == producto.id && esTorta(it.producto)
+                    }
+
+                    if (existingTortaIndex != -1) {
+                        val existingTorta = currentItems[existingTortaIndex]
+                        if (existingTorta.cantidad >= 1) {
+                            _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                            return@launch
+                        }
+                    }
+                }
+
                 val existingItemIndex = currentItems.indexOfFirst { it.producto.id == producto.id }
 
                 if (existingItemIndex != -1) {
                     val existingItem = currentItems[existingItemIndex]
                     val nuevaCantidad = existingItem.cantidad + cantidad
+
+                    // Validación adicional de stock para tortas con descuento
+                    if (esTorta(producto) && usuario?.esEstudianteDuoc == true &&
+                        usuario.esSuCumpleanos() == true) {
+
+                        // Para tortas en cumpleaños, máximo 1 unidad
+                        if (nuevaCantidad > 1) {
+                            _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                            return@launch
+                        }
+                    }
+
                     if (nuevaCantidad <= producto.stock) {
                         currentItems[existingItemIndex] = existingItem.copy(cantidad = nuevaCantidad)
                         _operacionExitosa.value = true
@@ -147,8 +219,30 @@ class CarritoViewModel : ViewModel() {
                         _errorMessage.value = "Se ajustó al stock máximo disponible"
                     }
                 } else {
-                    if (cantidad <= producto.stock) {
-                        currentItems.add(CartItem(producto, cantidad))
+                    // Para nuevo producto en el carrito
+                    var cantidadFinal = cantidad
+
+                    // Validación para nueva torta en cumpleaños
+                    if (esTorta(producto) && usuario?.esEstudianteDuoc == true &&
+                        usuario.esSuCumpleanos() == true) {
+
+                        val tortasEnCarrito = currentItems.filter { esTorta(it.producto) }
+                        val cantidadTotalTortas = tortasEnCarrito.sumOf { it.cantidad }
+
+                        if (cantidadTotalTortas >= 1) {
+                            _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                            return@launch
+                        }
+
+                        // Limitar a 1 unidad máximo
+                        if (cantidadFinal > 1) {
+                            cantidadFinal = 1
+                            _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                        }
+                    }
+
+                    if (cantidadFinal <= producto.stock) {
+                        currentItems.add(CartItem(producto, cantidadFinal))
                         _operacionExitosa.value = true
                     } else {
                         currentItems.add(CartItem(producto, producto.stock))
@@ -171,6 +265,17 @@ class CarritoViewModel : ViewModel() {
 
                 if (itemIndex != -1) {
                     val item = currentItems[itemIndex]
+
+                    // Validación para tortas en cumpleaños
+                    if (esTorta(item.producto) && _usuarioActual.value?.esEstudianteDuoc == true &&
+                        _usuarioActual.value?.esSuCumpleanos() == true) {
+
+                        if (nuevaCantidad > 1) {
+                            _errorMessage.value = "Solo puedes llevar 1 torta gratis en tu cumpleaños"
+                            return@launch
+                        }
+                    }
+
                     if (nuevaCantidad > 0 && nuevaCantidad <= item.producto.stock) {
                         currentItems[itemIndex] = item.copy(cantidad = nuevaCantidad)
                         _operacionExitosa.value = true

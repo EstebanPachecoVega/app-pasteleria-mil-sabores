@@ -9,7 +9,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminHomeScreen
@@ -17,11 +28,13 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminProductosScre
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AgregarProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.LoginScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.RegistroScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.ResumenPedidoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.CarritoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.ClienteHomeScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetalleProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.PerfilScreen
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
@@ -32,6 +45,10 @@ enum class Pantallas {
     PRINCIPAL,
     DETALLE_PRODUCTO,
     CARRITO,
+    RESUMEN_PEDIDO,
+    INFORMACION_ENVIO,
+    PAGO,
+    CONFIRMACION_PEDIDO,
     PERFIL,
     ADMIN_HOME,
     ADMIN_PRODUCTOS,
@@ -43,7 +60,8 @@ fun AppNavigation(
     viewModel: FormularioViewModel,
     productoViewModel: ProductoViewModel,
     carritoViewModel: CarritoViewModel,
-    perfilViewModel: PerfilViewModel
+    perfilViewModel: PerfilViewModel,
+    checkoutViewModel: CheckoutViewModel
 ) {
     var pantallaActual by remember { mutableStateOf(Pantallas.LOGIN) }
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
@@ -62,7 +80,7 @@ fun AppNavigation(
     // Función para retroceder
     fun navigateBack() {
         if (navigationStack.size > 1) {
-            navigationStack.removeLast()
+            navigationStack.removeAt(navigationStack.lastIndex)
             pantallaActual = navigationStack.last()
         } else {
             // Si estamos en la pantalla principal y no hay más pantallas, cerrar la app
@@ -260,10 +278,7 @@ fun AppNavigation(
             CarritoScreen(
                 onVolver = { navigateBack() },
                 onContinuarCompra = { navigateTo(Pantallas.PRINCIPAL) },
-                onCheckout = {
-                    println("DEBUG - Navegando a checkout")
-                    // Futuro: navegar a pantalla de checkout
-                },
+                onCheckout = { navigateTo(Pantallas.RESUMEN_PEDIDO) },
                 viewModel = carritoViewModel,
                 usuarioActual = usuarioLogueado,
                 onBackPressed = { navigateBack() }
@@ -284,6 +299,92 @@ fun AppNavigation(
                 )
             } ?: run {
                 navigateTo(Pantallas.LOGIN)
+            }
+        }
+        Pantallas.RESUMEN_PEDIDO -> {
+            usuarioLogueado?.let { usuario ->
+                // Obtener los valores del carrito directamente
+                val cartItems = carritoViewModel.cartItems.collectAsState().value
+                val resumen = carritoViewModel.resumenCarrito.collectAsState().value
+
+                // Inicializar el pedido en el ViewModel
+                LaunchedEffect(cartItems, resumen) {
+                    if (cartItems.isNotEmpty()) {
+                        checkoutViewModel.inicializarPedido(
+                            carritoItems = cartItems,
+                            resumen = resumen,
+                            usuario = usuario
+                        )
+                    }
+                }
+
+                ResumenPedidoScreen(
+                    carritoViewModel = carritoViewModel,
+                    usuario = usuario,
+                    onVolver = { navigateBack() },
+                    onContinuarEnvio = { navigateTo(Pantallas.INFORMACION_ENVIO) },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
+            }
+        }
+        Pantallas.INFORMACION_ENVIO -> {
+            // Por ahora, placeholder - lo implementaremos después
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column (
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Información de Envío - Próximamente")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button (onClick = { navigateBack() }) {
+                        Text("Volver")
+                    }
+                }
+            }
+        }
+
+        Pantallas.PAGO -> {
+            // Por ahora, placeholder - lo implementaremos después
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Pago - Próximamente")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { navigateBack() }) {
+                        Text("Volver")
+                    }
+                }
+            }
+        }
+
+        Pantallas.CONFIRMACION_PEDIDO -> {
+            // Por ahora, placeholder - lo implementaremos después
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Confirmación de Pedido - Próximamente")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = {
+                        // Ir al inicio (PRINCIPAL)
+                        navigationStack.clear()
+                        navigationStack.add(Pantallas.PRINCIPAL)
+                        pantallaActual = Pantallas.PRINCIPAL
+                    }) {
+                        Text("Ir al Inicio")
+                    }
+                }
             }
         }
     }

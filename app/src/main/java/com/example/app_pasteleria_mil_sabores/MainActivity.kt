@@ -16,6 +16,7 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.navigation.AppNavigation
 import com.example.app_pasteleria_mil_sabores.ui.screen.splash.SplashScreen
 import com.example.app_pasteleria_mil_sabores.ui.theme.AppPasteleriaMilSaboresTheme
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
@@ -61,6 +62,10 @@ fun FormularioApp(){
         CarritoViewModel()
     }
 
+    val checkoutViewModel = remember {
+        CheckoutViewModel()
+    }
+
     val perfilViewModel = remember {
         PerfilViewModel(database.usuarioDao())
     }
@@ -76,7 +81,8 @@ fun FormularioApp(){
             viewModel = usuarioViewModel,
             productoViewModel = productoViewModel,
             carritoViewModel = carritoViewModel,
-            perfilViewModel = perfilViewModel
+            perfilViewModel = perfilViewModel,
+            checkoutViewModel = checkoutViewModel
         )
     }
 }

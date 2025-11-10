@@ -1,4 +1,4 @@
-package com.example.app_pasteleria_mil_sabores.ui.screen.cliente
+package com.example.app_pasteleria_mil_sabores.ui.screen.checkout
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
@@ -6,54 +6,44 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.app_pasteleria_mil_sabores.model.Usuario
+import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import com.example.app_pasteleria_mil_sabores.ui.components.CartItemCard
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.ui.draw.shadow
-import com.example.app_pasteleria_mil_sabores.utils.formatearPrecio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CarritoScreen(
+fun ResumenPedidoScreen(
+    carritoViewModel: CarritoViewModel,
+    usuario: Usuario,
     onVolver: () -> Unit,
-    onContinuarCompra: () -> Unit,
-    onCheckout: () -> Unit,
-    viewModel: CarritoViewModel,
-    usuarioActual: Usuario?,
+    onContinuarEnvio: () -> Unit,
     onBackPressed: () -> Unit
 ) {
     BackHandler(enabled = true) {
         onBackPressed()
     }
 
-    val cartItems by viewModel.cartItems.collectAsState()
-    val resumen by viewModel.resumenCarrito.collectAsState()
-    val itemCount by viewModel.itemCount.collectAsState()
-
-    var showClearCartDialog by remember { mutableStateOf(false) }
-
-    // Actualizar el usuario en el ViewModel cuando cambie
-    LaunchedEffect(usuarioActual) {
-        viewModel.setUsuarioActual(usuarioActual)
-    }
+    val cartItems by carritoViewModel.cartItems.collectAsState()
+    val resumen by carritoViewModel.resumenCarrito.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Carrito de Compras",
+                        "Resumen del Pedido",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -65,21 +55,6 @@ fun CarritoScreen(
                             contentDescription = "Volver",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
-                    }
-                },
-                actions = {
-                    if (cartItems.isNotEmpty()) {
-                        TextButton(
-                            onClick = { showClearCartDialog = true }
-                        ) {
-                            Icon(
-                                Icons.Outlined.DeleteSweep,
-                                contentDescription = "Limpiar carrito",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Limpiar")
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -95,12 +70,12 @@ fun CarritoScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(8.dp),
-                    tonalElevation = 8.dp,
+                    tonalElevation = 8.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
-                            .navigationBarsPadding()
+                            .navigationBarsPadding(),
                     ) {
                         // Resumen de precios
                         Row(
@@ -155,7 +130,7 @@ fun CarritoScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = onCheckout,
+                            onClick = onContinuarEnvio,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -163,86 +138,113 @@ fun CarritoScreen(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            shape = MaterialTheme.shapes.large
+                            shape = MaterialTheme.shapes.large,
+                            enabled = cartItems.isNotEmpty()
                         ) {
                             Icon(
-                                Icons.Default.ShoppingCart,
+                                Icons.Default.LocalShipping,
                                 contentDescription = "Checkout",
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("Proceder al Pago")
+                            Text("Continuar con Envío")
                         }
                     }
                 }
             }
         }
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .navigationBarsPadding()
-        ) {
-            if (cartItems.isEmpty()) {
-                // Código del carrito vacío
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp)
-                        .imePadding(),
-                    contentAlignment = Alignment.Center
+        if (cartItems.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(32.dp)
+                    .navigationBarsPadding()
+                    .imePadding(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Text(
+                        "No hay productos en el carrito",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onVolver) {
+                        Text("Volver al Carrito")
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .navigationBarsPadding()
+            ) {
+                // Mostrar descuentos aplicados si existen
+                if (resumen.descuentos.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     ) {
-                        Icon(
-                            Icons.Default.ShoppingCart,
-                            contentDescription = "Carrito vacío",
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "Tu carrito está vacío",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Agrega productos deliciosos a tu carrito",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = onContinuarCompra,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                        Column(
+                            modifier = Modifier.padding(16.dp)
                         ) {
-                            Text("Continuar Comprando")
+                            Text(
+                                "🎁 Descuentos Aplicados",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            resumen.descuentos.forEach { descuento ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        descuento.descripcion,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    Text(
+                                        if (descuento.tipo == "ESTUDIANTE_CUMPLEANOS") "GRATIS"
+                                        else "-${descuento.porcentaje.toInt()}%",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
                         }
                     }
                 }
-            } else {
+
                 // Lista de productos
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize(),
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(16.dp)
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(cartItems, key = { it.producto.id }) { item ->
                         CartItemCard(
                             item = item,
                             onUpdateQuantity = { nuevaCantidad ->
-                                viewModel.actualizarCantidad(item.producto.id, nuevaCantidad)
+                                carritoViewModel.actualizarCantidad(item.producto.id, nuevaCantidad)
                             },
                             onRemove = {
-                                viewModel.eliminarProducto(item.producto.id)
+                                carritoViewModel.eliminarProducto(item.producto.id)
                             },
                             showDeleteButton = true,
                             showQuantityControls = true
@@ -250,48 +252,6 @@ fun CarritoScreen(
                     }
                 }
             }
-        }
-
-        if (showClearCartDialog) {
-            AlertDialog(
-                onDismissRequest = { showClearCartDialog = false },
-                title = {
-                    Text(
-                        "Limpiar carrito",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                text = {
-                    Text(
-                        "¿Estás seguro de que quieres eliminar todos los productos del carrito? Esta acción no se puede deshacer.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.limpiarCarrito()
-                            showClearCartDialog = false
-                        }
-                    ) {
-                        Text(
-                            "Limpiar",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showClearCartDialog = false }
-                    ) {
-                        Text(
-                            "Cancelar",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
-            )
         }
     }
 }
