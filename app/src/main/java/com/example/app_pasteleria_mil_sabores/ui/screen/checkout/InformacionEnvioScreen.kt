@@ -22,9 +22,16 @@ import com.example.app_pasteleria_mil_sabores.model.Direccion
 import com.example.app_pasteleria_mil_sabores.model.InformacionContacto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.LocationViewModel
 import android.util.Patterns
-import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.shadow
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.EditLocation
+import androidx.compose.material.icons.filled.Warning
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +47,7 @@ fun InformacionEnvioScreen(
     }
 
     val context = LocalContext.current
+    val locationViewModel: LocationViewModel = viewModel()
 
     // Estados locales para el formulario
     var nombre by remember { mutableStateOf(usuario.username) }
@@ -53,8 +61,53 @@ fun InformacionEnvioScreen(
     var ciudad by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
 
+    // Estados del ViewModel
+    val isLoading by locationViewModel.isLoading.collectAsState()
+    val errorMessage by locationViewModel.errorMessage.collectAsState()
+    val currentAddress by locationViewModel.currentAddress.collectAsState()
+
     val informacionContacto by checkoutViewModel.informacionContacto.collectAsState()
     val direccionEnvio by checkoutViewModel.direccionEnvio.collectAsState()
+
+    // Efecto para autocompletar cuando se obtiene una dirección
+    LaunchedEffect(currentAddress) {
+        currentAddress?.let { direccion ->
+            calle = direccion.calle
+            numero = direccion.numero
+            comuna = direccion.comuna
+            ciudad = direccion.ciudad
+            region = direccion.region
+        }
+    }
+
+    // Efecto para resetear el estado de ubicación cuando se entra a la pantalla
+    LaunchedEffect(Unit) {
+        locationViewModel.resetLocationState()
+    }
+
+    // Launcher para permisos de ubicación
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.values.all { it }
+        if (granted) {
+            // Usar el ViewModel para obtener la ubicación
+            locationViewModel.getCurrentLocation(context) { direccion ->
+                // La actualización de campos se maneja en el efecto de currentAddress
+            }
+        } else {
+            locationViewModel.clearError()
+        }
+    }
+
+    // Función para solicitar permisos y obtener ubicación
+    fun iniciarObtencionUbicacion() {
+        val permissions = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        locationPermissionLauncher.launch(permissions)
+    }
 
     // Cargar datos existentes si los hay
     LaunchedEffect(informacionContacto) {
@@ -144,7 +197,9 @@ fun InformacionEnvioScreen(
                                 comuna = comuna,
                                 ciudad = ciudad,
                                 region = region,
-                                coordenadas = null // Por ahora null, se integrará con geolocalización después
+                                codigoPostal = null,
+                                coordenadas = null,
+                                instruccionesEspeciales = null
                             )
 
                             checkoutViewModel.actualizarInformacionContacto(infoContacto)
@@ -257,12 +312,104 @@ fun InformacionEnvioScreen(
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        "Dirección de Envío",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    // Header con opción de geolocalización
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Dirección de Envío",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        // Botón para usar ubicación actual
+                        FilledTonalButton(
+                            onClick = { iniciarObtencionUbicacion() },
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Obteniendo...")
+                            } else {
+                                Icon(
+                                    Icons.Default.MyLocation,
+                                    contentDescription = "Usar ubicación actual",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Auto-completar")
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Mostrar mensajes de error/success de ubicación
+                    if (currentAddress != null) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = "Estado ubicación",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "¡Dirección autocompletada! Verifica y ajusta si es necesario.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+
+                    errorMessage?.let { mensaje ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = "Error ubicación",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    mensaje,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -337,42 +484,38 @@ fun InformacionEnvioScreen(
                         isError = region.isBlank()
                     )
 
-                    // Sección para geolocalización (placeholder por ahora)
+                    // Información sobre ingreso manual
                     Spacer(modifier = Modifier.height(16.dp))
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                // TODO: Integrar con API de geolocalización
-                            },
+                        modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                Icons.Default.LocationOn,
-                                contentDescription = "Geolocalización",
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                Icons.Default.EditLocation,
+                                contentDescription = "Ingreso manual",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    "Seleccionar ubicación en el mapa",
+                                    "Ingreso manual disponible",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "Próximamente disponible",
+                                    "Puedes completar los campos manualmente si lo prefieres",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 )
                             }
                         }
@@ -401,7 +544,9 @@ fun InformacionEnvioScreen(
                     Text(
                         "• Envío gratis en compras sobre \$40.000\n" +
                                 "• Costo de envío: \$2.500 para compras menores\n" +
-                                "• Tiempo de entrega: 2-3 días hábiles",
+                                "• Tiempo de entrega: 2-3 días hábiles\n" +
+                                "• Usa 'Auto-completar' para llenar tu dirección automáticamente\n" +
+                                "• Asegúrate de tener el GPS activado para mejor precisión",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

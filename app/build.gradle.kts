@@ -42,6 +42,11 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
@@ -78,4 +83,7 @@ dependencies {
 
     // Agregar Gson para los converters de Room
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Geolocalización
+    implementation(libs.play.services.location)
 }
