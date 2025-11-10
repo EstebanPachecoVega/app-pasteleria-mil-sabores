@@ -75,4 +75,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     // Para la selección de imágenes de la galería
     implementation("androidx.activity:activity-compose:1.8.0")
+
+    // Agregar Gson para los converters de Room
+    implementation("com.google.code.gson:gson:2.10.1")
 }

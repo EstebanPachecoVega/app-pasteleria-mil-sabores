@@ -34,9 +34,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun FormularioApp(){
+fun FormularioApp() {
     val context = LocalContext.current
 
+    // Inicializar base de datos
     val database = remember {
         Room.databaseBuilder(
             context,
@@ -46,10 +47,12 @@ fun FormularioApp(){
             .build()
     }
 
+    // Inicializar repositorios
     val productoRepository = remember {
         ProductoRepository(database.productoDao())
     }
 
+    // Inicializar ViewModels
     val usuarioViewModel = remember {
         FormularioViewModel(database.usuarioDao())
     }
@@ -62,14 +65,15 @@ fun FormularioApp(){
         CarritoViewModel()
     }
 
-    val checkoutViewModel = remember {
-        CheckoutViewModel()
-    }
-
     val perfilViewModel = remember {
         PerfilViewModel(database.usuarioDao())
     }
 
+    val checkoutViewModel = remember {
+        CheckoutViewModel(database.pedidoDao())
+    }
+
+    // Estado para splash screen
     val showSplash = remember { mutableStateOf(true) }
 
     if (showSplash.value) {

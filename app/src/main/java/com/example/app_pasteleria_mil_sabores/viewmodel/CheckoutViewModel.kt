@@ -2,99 +2,234 @@ package com.example.app_pasteleria_mil_sabores.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.app_pasteleria_mil_sabores.data.PedidoDao
 import com.example.app_pasteleria_mil_sabores.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class CheckoutViewModel : ViewModel() {
+class CheckoutViewModel(private val pedidoDao: PedidoDao) : ViewModel() {
+
+    // Estados para el pedido actual
     private val _pedidoActual = MutableStateFlow<Pedido?>(null)
     val pedidoActual: StateFlow<Pedido?> = _pedidoActual.asStateFlow()
 
-    private val _informacionEnvio = MutableStateFlow<InformacionContacto?>(null)
-    val informacionEnvio: StateFlow<InformacionContacto?> = _informacionEnvio.asStateFlow()
+    // Estados para la información de envío
+    private val _informacionContacto = MutableStateFlow<InformacionContacto?>(null)
+    val informacionContacto: StateFlow<InformacionContacto?> = _informacionContacto.asStateFlow()
 
     private val _direccionEnvio = MutableStateFlow<Direccion?>(null)
     val direccionEnvio: StateFlow<Direccion?> = _direccionEnvio.asStateFlow()
 
+    private val _ubicacionSeleccionada = MutableStateFlow<Coordenadas?>(null)
+    val ubicacionSeleccionada: StateFlow<Coordenadas?> = _ubicacionSeleccionada.asStateFlow()
+
+    // Estados para método de pago
     private val _metodoPago = MutableStateFlow<String?>(null)
     val metodoPago: StateFlow<String?> = _metodoPago.asStateFlow()
 
+    // Estados para UI
+    private val _operacionExitosa = MutableStateFlow(false)
+    val operacionExitosa = _operacionExitosa.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
+    // Inicializar pedido desde el carrito
     fun inicializarPedido(
         carritoItems: List<CartItem>,
         resumen: ResumenCarrito,
         usuario: Usuario?
     ) {
         viewModelScope.launch {
-            val pedido = Pedido(
-                id = com.example.app_pasteleria_mil_sabores.utils.IdGenerator.generarIdPedido(),
-                usuarioId = usuario?.id ?: "",
-                productos = carritoItems,
-                estado = "pendiente",
-                subtotal = resumen.subtotal,
-                descuentoAplicado = resumen.descuentoAplicado,
-                costoEnvio = 0, // Se calculará después
-                total = resumen.total,
-                direccionEnvio = null,
-                metodoPago = "",
-                informacionContacto = InformacionContacto(
-                    nombre = usuario?.username ?: "",
-                    email = usuario?.email ?: "",
-                    telefono = null
+            try {
+                val pedido = Pedido(
+                    id = com.example.app_pasteleria_mil_sabores.utils.IdGenerator.generarIdPedido(),
+                    usuarioId = usuario?.id ?: "",
+                    productos = carritoItems,
+                    estado = "pendiente",
+                    subtotal = resumen.subtotal,
+                    descuentoAplicado = resumen.descuentoAplicado,
+                    costoEnvio = 0, // Se calculará después
+                    total = resumen.total,
+                    direccionEnvio = null,
+                    metodoPago = "",
+                    informacionContacto = InformacionContacto(
+                        nombre = usuario?.username ?: "",
+                        email = usuario?.email ?: "",
+                        telefono = null
+                    )
                 )
-            )
-            _pedidoActual.value = pedido
+                _pedidoActual.value = pedido
+                _operacionExitosa.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al inicializar pedido: ${e.message}"
+            }
         }
     }
 
+    // Actualizar información de contacto
     fun actualizarInformacionContacto(informacion: InformacionContacto) {
-        _informacionEnvio.value = informacion
-        actualizarPedido { pedido ->
-            pedido.copy(informacionContacto = informacion)
+        viewModelScope.launch {
+            try {
+                _informacionContacto.value = informacion
+                actualizarPedido { pedido ->
+                    pedido.copy(informacionContacto = informacion)
+                }
+                _operacionExitosa.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al actualizar información de contacto: ${e.message}"
+            }
         }
     }
 
+    // Actualizar dirección de envío
     fun actualizarDireccion(direccion: Direccion) {
-        _direccionEnvio.value = direccion
-        actualizarPedido { pedido ->
-            pedido.copy(direccionEnvio = direccion)
+        viewModelScope.launch {
+            try {
+                _direccionEnvio.value = direccion
+                actualizarPedido { pedido ->
+                    pedido.copy(direccionEnvio = direccion)
+                }
+                _operacionExitosa.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al actualizar dirección: ${e.message}"
+            }
         }
     }
 
+    // Actualizar ubicación seleccionada
+    fun actualizarUbicacionSeleccionada(coordenadas: Coordenadas?) {
+        _ubicacionSeleccionada.value = coordenadas
+    }
+
+    // Actualizar método de pago
     fun actualizarMetodoPago(metodo: String) {
-        _metodoPago.value = metodo
-        actualizarPedido { pedido ->
-            pedido.copy(metodoPago = metodo)
+        viewModelScope.launch {
+            try {
+                _metodoPago.value = metodo
+                actualizarPedido { pedido ->
+                    pedido.copy(metodoPago = metodo)
+                }
+                _operacionExitosa.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al actualizar método de pago: ${e.message}"
+            }
         }
     }
 
+    // Calcular costo de envío
     fun calcularCostoEnvio(subtotal: Int): Int {
         return if (subtotal >= 40000) 0 else 2500
     }
 
+    // Actualizar costo de envío en el pedido
     fun actualizarCostoEnvio() {
-        actualizarPedido { pedido ->
-            val costoEnvio = calcularCostoEnvio(pedido.subtotal)
-            val nuevoTotal = pedido.subtotal - pedido.descuentoAplicado + costoEnvio
-            pedido.copy(costoEnvio = costoEnvio, total = nuevoTotal)
+        viewModelScope.launch {
+            try {
+                actualizarPedido { pedido ->
+                    val costoEnvio = calcularCostoEnvio(pedido.subtotal)
+                    val nuevoTotal = pedido.subtotal - pedido.descuentoAplicado + costoEnvio
+                    pedido.copy(costoEnvio = costoEnvio, total = nuevoTotal)
+                }
+                _operacionExitosa.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al actualizar costo de envío: ${e.message}"
+            }
         }
     }
 
+    // Función interna para actualizar el pedido
     private fun actualizarPedido(transform: (Pedido) -> Pedido) {
         _pedidoActual.value?.let { pedido ->
             _pedidoActual.value = transform(pedido)
         }
     }
 
-    fun confirmarPedido(): Pedido? {
-        return _pedidoActual.value?.copy(estado = "confirmado")
+    // Confirmar y guardar pedido en la base de datos
+    suspend fun confirmarYGuardarPedido(): Boolean {
+        return try {
+            _pedidoActual.value?.let { pedido ->
+                val pedidoConfirmado = pedido.copy(estado = "confirmado")
+                pedidoDao.insertar(pedidoConfirmado)
+                _pedidoActual.value = pedidoConfirmado
+                _operacionExitosa.value = true
+                true
+            } ?: false
+        } catch (e: Exception) {
+            _errorMessage.value = "Error al confirmar pedido: ${e.message}"
+            false
+        }
     }
 
+    // Obtener pedidos por usuario
+    fun obtenerPedidosPorUsuario(usuarioId: String) = pedidoDao.obtenerPedidosPorUsuario(usuarioId)
+
+    // Obtener pedido por ID
+    suspend fun obtenerPedidoPorId(id: String): Pedido? {
+        return try {
+            pedidoDao.obtenerPedidoPorId(id)
+        } catch (e: Exception) {
+            _errorMessage.value = "Error al obtener pedido: ${e.message}"
+            null
+        }
+    }
+
+    // Validaciones
+    fun validarInformacionContacto(): Boolean {
+        val info = _informacionContacto.value
+        return info != null &&
+                info.nombre.isNotBlank() &&
+                info.email.isNotBlank() &&
+                android.util.Patterns.EMAIL_ADDRESS.matcher(info.email).matches()
+    }
+
+    fun validarDireccion(): Boolean {
+        val direccion = _direccionEnvio.value
+        return direccion != null &&
+                direccion.calle.isNotBlank() &&
+                direccion.numero.isNotBlank() &&
+                direccion.comuna.isNotBlank() &&
+                direccion.ciudad.isNotBlank() &&
+                direccion.region.isNotBlank()
+    }
+
+    fun validarMetodoPago(): Boolean {
+        return _metodoPago.value != null && _metodoPago.value!!.isNotBlank()
+    }
+
+    fun esInformacionEnvioCompleta(): Boolean {
+        return validarInformacionContacto() && validarDireccion()
+    }
+
+    fun esPagoCompleto(): Boolean {
+        return validarMetodoPago() && _pedidoActual.value != null
+    }
+
+    // Limpiar estados
     fun limpiarCheckout() {
-        _pedidoActual.value = null
-        _informacionEnvio.value = null
-        _direccionEnvio.value = null
-        _metodoPago.value = null
+        viewModelScope.launch {
+            _pedidoActual.value = null
+            _informacionContacto.value = null
+            _direccionEnvio.value = null
+            _ubicacionSeleccionada.value = null
+            _metodoPago.value = null
+            _errorMessage.value = null
+        }
+    }
+
+    fun limpiarError() {
+        _errorMessage.value = null
+    }
+
+    fun resetearOperacionExitosa() {
+        _operacionExitosa.value = false
+    }
+
+    // Obtener pedido actual para confirmación
+    fun obtenerPedidoConfirmado(): Pedido? {
+        return _pedidoActual.value?.takeIf { it.estado == "confirmado" }
     }
 }

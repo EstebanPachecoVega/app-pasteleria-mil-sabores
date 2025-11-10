@@ -2,15 +2,17 @@ package com.example.app_pasteleria_mil_sabores.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.Date
+import androidx.room.TypeConverters
+import com.example.app_pasteleria_mil_sabores.data.Convertidores
 
 @Entity(tableName = "Pedido")
+@TypeConverters(Convertidores::class)
 data class Pedido(
     @PrimaryKey
     val id: String,
     val usuarioId: String,
     val productos: List<CartItem>,
-    val estado: String, // "pendiente", "confirmado", "enviado", "entregado"
+    val estado: String,
     val fechaCreacion: Long = System.currentTimeMillis(),
     val subtotal: Int,
     val descuentoAplicado: Int,
@@ -19,24 +21,4 @@ data class Pedido(
     val direccionEnvio: Direccion?,
     val metodoPago: String,
     val informacionContacto: InformacionContacto
-)
-
-data class Direccion(
-    val calle: String,
-    val numero: String,
-    val comuna: String,
-    val ciudad: String,
-    val region: String,
-    val coordenadas: Coordenadas? // lat, lng
-)
-
-data class Coordenadas(
-    val latitud: Double,
-    val longitud: Double
-)
-
-data class InformacionContacto(
-    val nombre: String,
-    val email: String,
-    val telefono: String?
 )

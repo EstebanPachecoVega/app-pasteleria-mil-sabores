@@ -9,18 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminHomeScreen
@@ -28,6 +19,9 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminProductosScre
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AgregarProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.LoginScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.RegistroScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.ConfirmacionPedidoScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.InformacionEnvioScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.PagoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.ResumenPedidoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.CarritoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.ClienteHomeScreen
@@ -45,14 +39,14 @@ enum class Pantallas {
     PRINCIPAL,
     DETALLE_PRODUCTO,
     CARRITO,
-    RESUMEN_PEDIDO,
-    INFORMACION_ENVIO,
-    PAGO,
-    CONFIRMACION_PEDIDO,
     PERFIL,
     ADMIN_HOME,
     ADMIN_PRODUCTOS,
-    AGREGAR_PRODUCTO
+    AGREGAR_PRODUCTO,
+    RESUMEN_PEDIDO,
+    INFORMACION_ENVIO,
+    PAGO,
+    CONFIRMACION_PEDIDO
 }
 
 @Composable
@@ -68,8 +62,12 @@ fun AppNavigation(
     var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
     val context = LocalContext.current
 
+    // Obtener estados del carrito
+    val cartItems by carritoViewModel.cartItems.collectAsState()
+    val resumen by carritoViewModel.resumenCarrito.collectAsState()
+
     // Pila de navegación para manejar el back button
-    val navigationStack = remember { mutableStateListOf(Pantallas.LOGIN) }
+    val navigationStack: SnapshotStateList<Pantallas> = remember { mutableStateListOf(Pantallas.LOGIN) }
 
     // Función para navegar a una nueva pantalla
     fun navigateTo(screen: Pantallas) {
@@ -120,6 +118,7 @@ fun AppNavigation(
         carritoViewModel.limpiarCarrito()
         perfilViewModel.resetearContadores()
         perfilViewModel.limpiarEstado()
+        checkoutViewModel.limpiarCheckout()
 
         // Limpiar cache específico del usuario anterior
         usuarioAnterior?.let {
@@ -301,21 +300,16 @@ fun AppNavigation(
                 navigateTo(Pantallas.LOGIN)
             }
         }
+
         Pantallas.RESUMEN_PEDIDO -> {
             usuarioLogueado?.let { usuario ->
-                // Obtener los valores del carrito directamente
-                val cartItems = carritoViewModel.cartItems.collectAsState().value
-                val resumen = carritoViewModel.resumenCarrito.collectAsState().value
-
                 // Inicializar el pedido en el ViewModel
                 LaunchedEffect(cartItems, resumen) {
-                    if (cartItems.isNotEmpty()) {
-                        checkoutViewModel.inicializarPedido(
-                            carritoItems = cartItems,
-                            resumen = resumen,
-                            usuario = usuario
-                        )
-                    }
+                    checkoutViewModel.inicializarPedido(
+                        carritoItems = cartItems,
+                        resumen = resumen,
+                        usuario = usuario
+                    )
                 }
 
                 ResumenPedidoScreen(
@@ -329,62 +323,50 @@ fun AppNavigation(
                 navigateTo(Pantallas.LOGIN)
             }
         }
+
         Pantallas.INFORMACION_ENVIO -> {
-            // Por ahora, placeholder - lo implementaremos después
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column (
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Información de Envío - Próximamente")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button (onClick = { navigateBack() }) {
-                        Text("Volver")
-                    }
-                }
+            usuarioLogueado?.let { usuario ->
+                InformacionEnvioScreen(
+                    checkoutViewModel = checkoutViewModel,
+                    usuario = usuario,
+                    onVolver = { navigateBack() },
+                    onContinuarPago = { navigateTo(Pantallas.PAGO) },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
             }
         }
 
         Pantallas.PAGO -> {
-            // Por ahora, placeholder - lo implementaremos después
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Pago - Próximamente")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { navigateBack() }) {
-                        Text("Volver")
-                    }
-                }
+            usuarioLogueado?.let { usuario ->
+                PagoScreen(
+                    checkoutViewModel = checkoutViewModel,
+                    usuario = usuario,
+                    onVolver = { navigateBack() },
+                    onConfirmarPedido = { navigateTo(Pantallas.CONFIRMACION_PEDIDO) },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
             }
         }
 
         Pantallas.CONFIRMACION_PEDIDO -> {
-            // Por ahora, placeholder - lo implementaremos después
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Confirmación de Pedido - Próximamente")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = {
-                        // Ir al inicio (PRINCIPAL)
-                        navigationStack.clear()
-                        navigationStack.add(Pantallas.PRINCIPAL)
-                        pantallaActual = Pantallas.PRINCIPAL
-                    }) {
-                        Text("Ir al Inicio")
-                    }
-                }
+            usuarioLogueado?.let { usuario ->
+                ConfirmacionPedidoScreen(
+                    checkoutViewModel = checkoutViewModel,
+                    usuario = usuario,
+                    onIrAlInicio = {
+                        // Limpiar carrito y volver al inicio
+                        carritoViewModel.limpiarCarrito()
+                        checkoutViewModel.limpiarCheckout()
+                        navigateTo(Pantallas.PRINCIPAL)
+                    },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
             }
         }
     }
