@@ -18,6 +18,10 @@ import com.example.app_pasteleria_mil_sabores.model.Usuario
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminHomeScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminProductosScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AgregarProductoScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminPedidosScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminUsuariosScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.AdminReportesScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.admin.EditarProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.LoginScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.auth.RegistroScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.checkout.ConfirmacionPedidoScreen
@@ -47,6 +51,10 @@ enum class Pantallas {
     ADMIN_HOME,
     ADMIN_PRODUCTOS,
     AGREGAR_PRODUCTO,
+    EDITAR_PRODUCTO,
+    ADMIN_PEDIDOS,
+    ADMIN_USUARIOS,
+    ADMIN_REPORTES,
     RESUMEN_PEDIDO,
     INFORMACION_ENVIO,
     PAGO,
@@ -231,6 +239,15 @@ fun AppNavigation(
                     onGestionarProductos = {
                         navigateTo(Pantallas.ADMIN_PRODUCTOS)
                     },
+                    onGestionarPedidos = {
+                        navigateTo(Pantallas.ADMIN_PEDIDOS)
+                    },
+                    onGestionarUsuarios = {
+                        navigateTo(Pantallas.ADMIN_USUARIOS)
+                    },
+                    onVerReportes = {
+                        navigateTo(Pantallas.ADMIN_REPORTES)
+                    },
                     onBackPressed = {
                         // En Admin Home, el back button minimiza la app
                         val intent = Intent(Intent.ACTION_MAIN)
@@ -252,6 +269,10 @@ fun AppNavigation(
                     productoViewModel = productoViewModel,
                     onVolver = { navigateBack() },
                     onAgregarProducto = { navigateTo(Pantallas.AGREGAR_PRODUCTO) },
+                    onEditarProducto = { producto ->
+                        productoSeleccionado = producto
+                        navigateTo(Pantallas.EDITAR_PRODUCTO)
+                    },
                     onBackPressed = { navigateBack() }
                 )
             } ?: run {
@@ -264,6 +285,53 @@ fun AppNavigation(
                 productoViewModel = productoViewModel,
                 onCancelar = { navigateBack() },
                 onGuardarExitoso = { navigateBack() },
+                onBackPressed = { navigateBack() }
+            )
+        }
+
+        Pantallas.EDITAR_PRODUCTO -> {
+            productoSeleccionado?.let { producto ->
+                EditarProductoScreen(
+                    producto = producto,
+                    productoViewModel = productoViewModel,
+                    onCancelar = { navigateBack() },
+                    onGuardarExitoso = { navigateBack() },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.ADMIN_PRODUCTOS)
+            }
+        }
+
+        Pantallas.ADMIN_PEDIDOS -> {
+            usuarioLogueado?.let { usuario ->
+                AdminPedidosScreen(
+                    usuario = usuario,
+                    pedidoViewModel = pedidoViewModel,
+                    onVolver = { navigateBack() },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
+            }
+        }
+
+        Pantallas.ADMIN_USUARIOS -> {
+            usuarioLogueado?.let { usuario ->
+                AdminUsuariosScreen(
+                    usuario = usuario,
+                    viewModel = viewModel,
+                    onVolver = { navigateBack() },
+                    onBackPressed = { navigateBack() }
+                )
+            } ?: run {
+                navigateTo(Pantallas.LOGIN)
+            }
+        }
+
+        Pantallas.ADMIN_REPORTES -> {
+            AdminReportesScreen(
+                onVolver = { navigateBack() },
                 onBackPressed = { navigateBack() }
             )
         }

@@ -56,7 +56,7 @@ class CheckoutViewModel(
                     id = com.example.app_pasteleria_mil_sabores.utils.IdGenerator.generarIdPedido(),
                     usuarioId = usuario?.id ?: "",
                     productos = carritoItems,
-                    estado = "pendiente",
+                    estado = "Pendiente",
                     subtotal = resumen.subtotal,
                     descuentoAplicado = resumen.descuentoAplicado,
                     costoEnvio = 0, // Se calculará después
@@ -188,7 +188,7 @@ class CheckoutViewModel(
                 }
 
                 // 3. Guardar el pedido
-                val pedidoConfirmado = pedido.copy(estado = "confirmado")
+                val pedidoConfirmado = pedido.copy(estado = "Confirmado")
                 pedidoDao.insertar(pedidoConfirmado)
                 _pedidoActual.value = pedidoConfirmado
                 _operacionExitosa.value = true
@@ -270,6 +270,6 @@ class CheckoutViewModel(
 
     // Obtener pedido actual para confirmación
     fun obtenerPedidoConfirmado(): Pedido? {
-        return _pedidoActual.value?.takeIf { it.estado == "confirmado" }
+        return _pedidoActual.value?.takeIf { it.estado == "Confirmado" }
     }
 }

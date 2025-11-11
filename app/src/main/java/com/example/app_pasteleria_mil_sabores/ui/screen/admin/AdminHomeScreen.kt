@@ -36,6 +36,9 @@ fun AdminHomeScreen(
     productoViewModel: ProductoViewModel,
     onCerrarSesion: () -> Unit,
     onGestionarProductos: () -> Unit,
+    onGestionarPedidos: () -> Unit, // Nuevo parámetro
+    onGestionarUsuarios: () -> Unit, // Nuevo parámetro
+    onVerReportes: () -> Unit, // Nuevo parámetro
     onBackPressed: () -> Unit
 ) {
     BackHandler (enabled = true) {
@@ -69,6 +72,7 @@ fun AdminHomeScreen(
                     Text(
                         "Panel de Administración",
                         style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -81,13 +85,13 @@ fun AdminHomeScreen(
                         Icon(
                             imageVector = Icons.Default.Logout,
                             contentDescription = "Cerrar sesión",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -203,39 +207,24 @@ fun AdminHomeScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         ActionButton(
+                            text = "Gestión de Pedidos",
+                            icon = Icons.Default.ShoppingCart,
+                            onClick = onGestionarPedidos,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        ActionButton(
                             text = "Gestión de Usuarios",
                             icon = Icons.Default.People,
-                            onClick = { /* Futuro: Navegar a gestión de usuarios */ },
+                            onClick = onGestionarUsuarios,
                             modifier = Modifier.fillMaxWidth()
                         )
                         ActionButton(
                             text = "Ver Reportes",
                             icon = Icons.Default.Analytics,
-                            onClick = { /* Futuro: Navegar a reportes */ },
+                            onClick = onVerReportes,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
-
-                // Lista de usuarios
-                item {
-                    Text(
-                        text = "Usuarios Registrados",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                items(usuarios) { usuarioItem ->
-                    UserCard(
-                        usuario = usuarioItem,
-                        isCurrentUser = usuarioItem.id == usuario.id
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

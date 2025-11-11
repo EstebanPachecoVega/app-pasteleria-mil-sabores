@@ -14,30 +14,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import com.example.app_pasteleria_mil_sabores.R
+import com.example.app_pasteleria_mil_sabores.model.Producto
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AgregarProductoScreen(
+fun EditarProductoScreen(
+    producto: Producto,
     productoViewModel: ProductoViewModel,
     onCancelar: () -> Unit,
     onGuardarExitoso: () -> Unit,
     onBackPressed: () -> Unit
 ) {
-    BackHandler (enabled = true) {
+    BackHandler(enabled = true) {
         onBackPressed()
     }
 
-    var nombre by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var precio by remember { mutableStateOf("") }
-    var imagen by remember { mutableStateOf("") }
-    var categoria by remember { mutableStateOf("") }
-    var stock by remember { mutableStateOf("") }
-    var destacado by remember { mutableStateOf(false) }
+    var nombre by remember { mutableStateOf(producto.nombre) }
+    var descripcion by remember { mutableStateOf(producto.descripcion) }
+    var precio by remember { mutableStateOf(producto.precio.toString()) }
+    var imagen by remember { mutableStateOf(producto.imagen) }
+    var categoria by remember { mutableStateOf(producto.categoria) }
+    var stock by remember { mutableStateOf(producto.stock.toString()) }
+    var destacado by remember { mutableStateOf(producto.destacado) }
+    var activo by remember { mutableStateOf(producto.activo) }
 
     val errorMessage by productoViewModel.errorMessage.collectAsState()
     val cargando by productoViewModel.cargando.collectAsState()
@@ -67,7 +67,7 @@ fun AgregarProductoScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Agregar Nuevo Producto",
+                        "Editar Producto",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -297,7 +297,7 @@ fun AgregarProductoScreen(
                     }
                 }
 
-                // Campo Imagen (placeholder por ahora)
+                // Campo Imagen
                 OutlinedTextField(
                     value = imagen,
                     onValueChange = { imagen = it },
@@ -311,7 +311,7 @@ fun AgregarProductoScreen(
                     singleLine = true,
                     placeholder = {
                         Text(
-                            "Ej: torta_chocolate (placeholder por ahora)",
+                            "Ej: torta_chocolate",
                             style = MaterialTheme.typography.bodySmall
                         )
                     },
@@ -321,24 +321,47 @@ fun AgregarProductoScreen(
                     )
                 )
 
-                // Checkbox Destacado
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                // Checkboxes para opciones
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Checkbox(
-                        checked = destacado,
-                        onCheckedChange = { destacado = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = MaterialTheme.colorScheme.primary,
-                            checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = destacado,
+                            onCheckedChange = { destacado = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = MaterialTheme.colorScheme.primary,
+                                checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         )
-                    )
-                    Text(
-                        text = "Producto Destacado",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                        Text(
+                            text = "Producto Destacado",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = activo,
+                            onCheckedChange = { activo = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = MaterialTheme.colorScheme.primary,
+                                checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                        Text(
+                            text = "Producto Activo",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 }
 
                 // Mostrar error si existe
@@ -379,14 +402,17 @@ fun AgregarProductoScreen(
 
                     Button(
                         onClick = {
-                            productoViewModel.crearNuevoProducto(
-                                nombre = nombre.trim(),
-                                descripcion = descripcion.trim(),
-                                precio = precio.toIntOrNull() ?: 0,
-                                imagen = if (imagen.isBlank()) "placeholder" else imagen.trim(),
-                                categoria = categoria,
-                                stock = stock.toIntOrNull() ?: 0,
-                                destacado = destacado
+                            productoViewModel.actualizarProducto(
+                                producto.copy(
+                                    nombre = nombre.trim(),
+                                    descripcion = descripcion.trim(),
+                                    precio = precio.toIntOrNull() ?: producto.precio,
+                                    imagen = if (imagen.isBlank()) producto.imagen else imagen.trim(),
+                                    categoria = categoria,
+                                    stock = stock.toIntOrNull() ?: producto.stock,
+                                    destacado = destacado,
+                                    activo = activo
+                                )
                             )
                         },
                         enabled = !cargando &&
@@ -412,7 +438,7 @@ fun AgregarProductoScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Guardar Producto")
+                            Text("Guardar Cambios")
                         }
                     }
                 }

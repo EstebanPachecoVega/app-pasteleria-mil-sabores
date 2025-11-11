@@ -21,6 +21,9 @@ interface PedidoDao {
     @Query("SELECT * FROM Pedido WHERE usuarioId = :usuarioId AND estado = :estado ORDER BY fechaCreacion DESC")
     fun obtenerPedidosPorEstado(usuarioId: String, estado: String): Flow<List<Pedido>>
 
+    @Query("SELECT * FROM Pedido ORDER BY fechaCreacion DESC")
+    fun obtenerTodosLosPedidos(): Flow<List<Pedido>>
+
     @Query("UPDATE Pedido SET estado = :estado WHERE id = :id")
     suspend fun actualizarEstado(id: String, estado: String)
 }
