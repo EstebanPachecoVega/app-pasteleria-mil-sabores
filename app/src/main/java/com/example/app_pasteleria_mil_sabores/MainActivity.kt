@@ -23,6 +23,7 @@ import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PedidoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.RecetaViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +87,10 @@ fun FormularioApp() {
         PedidoViewModel(PedidoRepository(database.pedidoDao()))
     }
 
+    val recetaViewModel = remember {
+        RecetaViewModel()
+    }
+
     LaunchedEffect (Unit) {
         // Ejecutar migración de estados una vez al iniciar la app
         pedidoRepository.migrarEstadosPedidos()
@@ -105,7 +110,8 @@ fun FormularioApp() {
             carritoViewModel = carritoViewModel,
             perfilViewModel = perfilViewModel,
             checkoutViewModel = checkoutViewModel,
-            pedidoViewModel = pedidoViewModel
+            pedidoViewModel = pedidoViewModel,
+            recetaViewModel = recetaViewModel
         )
     }
 }

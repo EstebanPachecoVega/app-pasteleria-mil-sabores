@@ -79,11 +79,20 @@ dependencies {
     // Para cargar imágenes desde URL/URI
     implementation("io.coil-kt:coil-compose:2.4.0")
     // Para la selección de imágenes de la galería
-    implementation("androidx.activity:activity-compose:1.8.0")
+    implementation("androidx.activity:activity-compose:1.9.0")
 
     // Agregar Gson para los converters de Room
     implementation("com.google.code.gson:gson:2.10.1")
 
     // Geolocalización
     implementation(libs.play.services.location)
+
+    implementation("androidx.compose.material3:material3:1.3.0")
+
+    // Retrofit y Gson Converter
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // Corrutinas para trabajo asincrónico
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
 }

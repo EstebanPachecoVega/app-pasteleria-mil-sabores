@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.MenuBook // Nuevo icono para recetas
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +36,12 @@ import com.example.app_pasteleria_mil_sabores.ui.components.BotonAgregarCarrito
 import com.example.app_pasteleria_mil_sabores.ui.components.FotoPerfilComposable
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +56,8 @@ fun ClienteHomeScreen(
     onVerPedidos: () -> Unit,
     onVerSoporte: () -> Unit,
     onVerDetalleProducto: (Producto) -> Unit,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    onVerRecetas: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -133,30 +141,116 @@ fun ClienteHomeScreen(
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
+                            onDismissRequest = { menuExpanded = false },
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialTheme.shapes.medium
+                                )
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Mi Perfil") },
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Person,
+                                            contentDescription = "Mi Perfil",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Mi Perfil",
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
                                 onClick = {
                                     menuExpanded = false
                                     onVerPerfil()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Mis Pedidos") },
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ShoppingBag,
+                                            contentDescription = "Mis Pedidos",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Mis Pedidos",
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
                                 onClick = {
                                     menuExpanded = false
                                     onVerPedidos()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Soporte") },
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.MenuBook,
+                                            contentDescription = "Recetas",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Recetas de Postres",
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onVerRecetas()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.SupportAgent,
+                                            contentDescription = "Soporte",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Soporte",
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                },
                                 onClick = {
                                     menuExpanded = false
                                     onVerSoporte()
                                 }
                             )
-                            Divider()
+
+                            Divider(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                thickness = 1.dp
+                            )
+
                             ItemMenuCerrarSesion(
                                 onClick = {
                                     menuExpanded = false
@@ -207,7 +301,6 @@ fun ClienteHomeScreen(
     }
 }
 
-// Los composables ProductoCard y demás permanecen igual...
 @Composable
 fun ProductoCard(
     producto: Producto,

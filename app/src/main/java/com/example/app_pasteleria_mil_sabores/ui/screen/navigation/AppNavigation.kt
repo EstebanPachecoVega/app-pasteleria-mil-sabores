@@ -34,12 +34,14 @@ import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetallePedidoScr
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.DetalleProductoScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.MisPedidosScreen
 import com.example.app_pasteleria_mil_sabores.ui.screen.cliente.PerfilScreen
+import com.example.app_pasteleria_mil_sabores.ui.screen.recetas.RecetaScreen
 import com.example.app_pasteleria_mil_sabores.viewmodel.CarritoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.CheckoutViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PedidoViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.PerfilViewModel
 import com.example.app_pasteleria_mil_sabores.viewmodel.ProductoViewModel
+import com.example.app_pasteleria_mil_sabores.viewmodel.RecetaViewModel
 
 enum class Pantallas {
     LOGIN,
@@ -60,7 +62,8 @@ enum class Pantallas {
     PAGO,
     CONFIRMACION_PEDIDO,
     MIS_PEDIDOS,
-    DETALLE_PEDIDO
+    DETALLE_PEDIDO,
+    RECETAS
 }
 
 @Composable
@@ -70,7 +73,8 @@ fun AppNavigation(
     carritoViewModel: CarritoViewModel,
     perfilViewModel: PerfilViewModel,
     checkoutViewModel: CheckoutViewModel,
-    pedidoViewModel: PedidoViewModel
+    pedidoViewModel: PedidoViewModel,
+    recetaViewModel: RecetaViewModel
 ) {
     var pantallaActual by remember { mutableStateOf(Pantallas.LOGIN) }
     var usuarioLogueado by remember { mutableStateOf<Usuario?>(null) }
@@ -222,7 +226,8 @@ fun AppNavigation(
                         intent.addCategory(Intent.CATEGORY_HOME)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         context.startActivity(intent)
-                    }
+                    },
+                    onVerRecetas = { navigateTo(Pantallas.RECETAS) }
                 )
             } ?: run {
                 navigateTo(Pantallas.LOGIN)
@@ -475,6 +480,12 @@ fun AppNavigation(
             } ?: run {
                 navigateTo(Pantallas.MIS_PEDIDOS)
             }
+        }
+
+        Pantallas.RECETAS -> {
+            RecetaScreen(
+                onBackPressed = { navigateBack() }
+            )
         }
     }
 }
