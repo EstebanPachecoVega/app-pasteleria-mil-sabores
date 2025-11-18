@@ -54,7 +54,7 @@ object Validaciones {
 
     // Validar si es mayor de edad (18+ años)
     fun esMayorDeEdad(fechaNacimiento: String): Boolean {
-        if (fechaNacimiento.isBlank()) return true // Si no especifica fecha, permitir
+        if (fechaNacimiento.isBlank()) return true
 
         return try {
             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -71,13 +71,13 @@ object Validaciones {
 
             edad >= 18
         } catch (e: Exception) {
-            false // Si hay error en el parsing, considerar no válido
+            false
         }
     }
 
     // Validar si tiene más de 17 años (para registro)
     fun esMayorDe17Anios(fechaNacimiento: String): Boolean {
-        if (fechaNacimiento.isBlank()) return true // Si no especifica fecha, permitir
+        if (fechaNacimiento.isBlank()) return true
 
         return try {
             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -94,8 +94,32 @@ object Validaciones {
 
             edad >= 17 // Mayor de 17 años (18+)
         } catch (e: Exception) {
-            false // Si hay error en el parsing, considerar no válido
+            false
         }
+    }
+
+    // Validar que la fecha no sea futura
+    fun validarFechaNoFutura(fecha: String): Boolean {
+        if (fecha.isBlank()) return true
+
+        return try {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val fechaIngresada = dateFormat.parse(fecha)
+            val hoy = Calendar.getInstance()
+
+            !fechaIngresada.after(hoy.time)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Validación completa de fecha de nacimiento
+    fun validarFechaNacimientoCompleta(fecha: String): Boolean {
+        if (fecha.isBlank()) return true // Opcional
+
+        return validarFechaNacimiento(fecha) &&
+                validarFechaNoFutura(fecha) &&
+                esMayorDe17Anios(fecha)
     }
 
     // Obtener la edad actual

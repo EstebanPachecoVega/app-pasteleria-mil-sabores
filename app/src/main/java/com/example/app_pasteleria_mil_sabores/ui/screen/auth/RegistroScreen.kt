@@ -45,7 +45,8 @@ fun RegistroScreen(
             )
     val passwordValido = Validaciones.validarPassword(password)
     val confirmarPasswordValido = confirmarPassword == password
-    val formularioValido = usernameValido && emailValido && passwordValido && confirmarPasswordValido
+    val fechaValida = fechaNacimiento.isBlank() || Validaciones.validarFechaNacimientoCompleta(fechaNacimiento)
+    val formularioValido = usernameValido && emailValido && passwordValido && confirmarPasswordValido && fechaValida
 
     Column(
         modifier = Modifier
@@ -124,9 +125,7 @@ fun RegistroScreen(
                 fechaNacimiento = nuevaFecha
             },
             label = "Fecha de nacimiento (opcional)",
-            isError = fechaNacimiento.isNotBlank() &&
-                    (!Validaciones.validarFechaNacimiento(fechaNacimiento) ||
-                            !Validaciones.esMayorDe17Anios(fechaNacimiento)),
+            isError = fechaNacimiento.isNotBlank() && !fechaValida,
             supportingText = {
                 if (fechaNacimiento.isNotBlank()) {
                     when {
@@ -137,8 +136,14 @@ fun RegistroScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
+                        !Validaciones.validarFechaNoFutura(fechaNacimiento) -> {
+                            Text(
+                                "La fecha no puede ser futura",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                         !Validaciones.esMayorDe17Anios(fechaNacimiento) -> {
-                            val edad = Validaciones.obtenerEdad(fechaNacimiento)
                             Text(
                                 "Debes tener 17 años o más.",
                                 style = MaterialTheme.typography.labelSmall,

@@ -25,13 +25,23 @@ fun DatePickerField(
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+    val currentYear = calendar.get(Calendar.YEAR)
+    val currentMonth = calendar.get(Calendar.MONTH)
+    val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
+
+    // Calcular fecha mínima (101 años atrás) y máxima (hoy)
+    val minCalendar = Calendar.getInstance().apply {
+        set(currentYear - 101, currentMonth, currentDay)
+    }
+    val maxCalendar = Calendar.getInstance().apply {
+        set(currentYear, currentMonth, currentDay)
+    }
 
     // Formateador de fecha
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
 
     // Función para mostrar el DatePicker
     fun showDatePicker() {
-        // Si ya hay una fecha, usarla como valor inicial
         val initialCalendar = if (value.isNotBlank()) {
             try {
                 val fecha = dateFormatter.parse(value)
@@ -40,7 +50,11 @@ fun DatePickerField(
                 calendar // Usar fecha actual si hay error
             }
         } else {
-            calendar // Usar fecha actual si no hay valor
+            // Valor inicial: 18 años atrás (para mayoría de edad)
+            val defaultCalendar = Calendar.getInstance().apply {
+                set(currentYear - 18, currentMonth, currentDay)
+            }
+            defaultCalendar
         }
 
         val datePickerDialog = android.app.DatePickerDialog(
@@ -56,6 +70,11 @@ fun DatePickerField(
             initialCalendar.get(Calendar.MONTH),
             initialCalendar.get(Calendar.DAY_OF_MONTH)
         )
+
+        // Establecer límites de fecha
+        datePickerDialog.datePicker.minDate = minCalendar.timeInMillis
+        datePickerDialog.datePicker.maxDate = maxCalendar.timeInMillis
+
         datePickerDialog.show()
     }
 
@@ -74,7 +93,7 @@ fun DatePickerField(
 
     OutlinedTextField(
         value = value,
-        onValueChange = { }, // No permitir edición manual
+        onValueChange = { },
         label = { Text(label) },
         placeholder = { Text("dd/MM/yyyy") },
         modifier = modifier
@@ -84,7 +103,7 @@ fun DatePickerField(
                     showDatePicker()
                 }
             },
-        readOnly = true, // Usar readOnly en lugar de enabled=false para mostrar el valor
+        readOnly = true,
         trailingIcon = {
             Icon(
                 Icons.Default.CalendarToday,
