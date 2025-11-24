@@ -13,7 +13,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import com.example.app_pasteleria_mil_sabores.ui.components.EmailTextField
 import com.example.app_pasteleria_mil_sabores.ui.components.PasswordTextField
 import com.example.app_pasteleria_mil_sabores.utils.Validaciones
 import com.example.app_pasteleria_mil_sabores.model.Usuario
@@ -26,13 +33,14 @@ fun LoginScreen(
     onLoginExitoso: (Usuario) -> Unit,
     onBackPressed: () -> Unit
 ) {
-    BackHandler (enabled = true) {
+    BackHandler(enabled = true) {
         onBackPressed()
     }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var mostrarRecuperarPassword by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     val usuarioActual by viewModel.usuarioActual.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -76,12 +84,26 @@ fun LoginScreen(
                 }
             )
         } else {
-            OutlinedTextField(
+            EmailTextField(
                 value = email,
-                onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
-                placeholder = { Text("Ingrese su correo electrónico") },
+                onValueChange = {
+                    // Filtrar espacios automáticamente
+                    if (!it.contains(" ")) {
+                        email = it
+                    }
+                },
+                label = "Correo electrónico",
+                placeholder = "Ingrese su correo electrónico",
                 isError = email.isNotBlank() && !emailValido,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    }
+                ),
                 supportingText = {
                     if (email.isNotBlank() && !emailValido) {
                         Text(
@@ -91,17 +113,11 @@ fun LoginScreen(
                         )
                     }
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    errorBorderColor = MaterialTheme.colorScheme.error,
-                ),
                 modifier = Modifier.fillMaxWidth(0.8f)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo contraseña
             PasswordTextField(
                 value = password,
                 onValueChange = {
@@ -113,6 +129,18 @@ fun LoginScreen(
                 label = "Contraseña",
                 modifier = Modifier.fillMaxWidth(0.8f),
                 isError = password.isNotBlank() && !passwordValido,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (formularioValido) {
+                            viewModel.autenticarUsuario(email, password)
+                        }
+                        focusManager.clearFocus()
+                    }
+                ),
                 supportingText = {
                     if (password.isNotBlank() && !passwordValido) {
                         Text(
@@ -192,11 +220,14 @@ fun RecuperarPasswordSection(
 ) {
     var email by remember { mutableStateOf("") }
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     val emailValido = email.isNotBlank() && (email.endsWith("@duoc.cl", ignoreCase = true) || email.equals("admin@duoc.cl", ignoreCase = true))
 
     Column(
-        modifier = Modifier.fillMaxWidth(0.8f).background(MaterialTheme.colorScheme.background),
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -206,12 +237,29 @@ fun RecuperarPasswordSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        OutlinedTextField(
+        EmailTextField(
             value = email,
-            onValueChange = { email = it },
-            label = { Text("Ingresa tu correo") },
-            placeholder = { Text("ejemplo@duoc.cl") },
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    email = it
+                }
+            },
+            label = "Ingresa tu correo",
+            placeholder = "ejemplo@duoc.cl",
             isError = email.isNotBlank() && !emailValido,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (emailValido) {
+                        viewModel.recuperarPassword(email)
+                    }
+                    focusManager.clearFocus()
+                }
+            ),
             supportingText = {
                 if (email.isNotBlank() && !emailValido) {
                     Text(
@@ -221,11 +269,6 @@ fun RecuperarPasswordSection(
                     )
                 }
             },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = MaterialTheme.colorScheme.error,
-            ),
             modifier = Modifier.fillMaxWidth()
         )
 

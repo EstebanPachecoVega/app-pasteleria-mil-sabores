@@ -9,9 +9,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import com.example.app_pasteleria_mil_sabores.ui.components.DatePickerField
+import com.example.app_pasteleria_mil_sabores.ui.components.EmailTextField
 import com.example.app_pasteleria_mil_sabores.ui.components.PasswordTextField
+import com.example.app_pasteleria_mil_sabores.ui.components.UsernameTextField
 import com.example.app_pasteleria_mil_sabores.utils.Validaciones
 import com.example.app_pasteleria_mil_sabores.viewmodel.FormularioViewModel
 
@@ -22,7 +30,7 @@ fun RegistroScreen(
     onVolver: () -> Unit,
     onBackPressed: () -> Unit
 ) {
-    BackHandler (enabled = true) {
+    BackHandler(enabled = true) {
         onBackPressed()
     }
 
@@ -32,6 +40,7 @@ fun RegistroScreen(
     var confirmarPassword by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
     var codigoPromocional by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
 
     val errorMessage by viewModel.errorMessage.collectAsState()
 
@@ -63,7 +72,7 @@ fun RegistroScreen(
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        OutlinedTextField(
+        UsernameTextField(
             value = username,
             onValueChange = {
                 // Filtrar espacios automáticamente
@@ -71,9 +80,18 @@ fun RegistroScreen(
                     username = it
                 }
             },
-            label = { Text("Nombre de usuario") },
-            placeholder = { Text("Ingrese su nombre de usuario") },
+            label = "Nombre de usuario",
+            placeholder = "Ingrese su nombre de usuario",
             isError = username.isNotBlank() && !usernameValido,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                }
+            ),
             supportingText = {
                 if (username.isNotBlank() && !usernameValido) {
                     Text(
@@ -83,22 +101,31 @@ fun RegistroScreen(
                     )
                 }
             },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = MaterialTheme.colorScheme.error,
-            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        EmailTextField(
             value = email,
-            onValueChange = { email = it },
-            label = { Text("Correo electrónico") },
-            placeholder = { Text("Ingrese su correo electrónico") },
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    email = it
+                }
+            },
+            label = "Correo electrónico",
+            placeholder = "Ingrese su correo electrónico",
             isError = email.isNotBlank() && !emailValido,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                }
+            ),
             supportingText = {
                 if (email.isNotBlank() && !emailValido) {
                     Text(
@@ -108,17 +135,12 @@ fun RegistroScreen(
                     )
                 }
             },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = MaterialTheme.colorScheme.error,
-            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // DatePicker para fecha de nacimiento
+        // DatePicker para fecha de nacimiento - SIN keyboardOptions y keyboardActions
         DatePickerField(
             value = fechaNacimiento,
             onValueChange = { nuevaFecha ->
@@ -166,7 +188,12 @@ fun RegistroScreen(
 
         OutlinedTextField(
             value = codigoPromocional,
-            onValueChange = { codigoPromocional = it },
+            onValueChange = {
+                // Filtrar espacios automáticamente
+                if (!it.contains(" ")) {
+                    codigoPromocional = it
+                }
+            },
             label = { Text("Código promocional (opcional)") },
             placeholder = { Text("Ej: CODIGO_PROMOCIONAL") },
             trailingIcon = {
@@ -178,6 +205,15 @@ fun RegistroScreen(
                     )
                 }
             },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                }
+            ),
             supportingText = {
                 if (codigoPromocional.isNotBlank()) {
                     Text(
@@ -216,6 +252,15 @@ fun RegistroScreen(
             label = "Contraseña",
             modifier = Modifier.fillMaxWidth(0.8f),
             isError = password.isNotBlank() && !passwordValido,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                }
+            ),
             supportingText = {
                 if (password.isNotBlank() && !passwordValido) {
                     Text(
@@ -241,6 +286,31 @@ fun RegistroScreen(
             label = "Confirmar Contraseña",
             modifier = Modifier.fillMaxWidth(0.8f),
             isError = confirmarPassword.isNotBlank() && !confirmarPasswordValido,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (formularioValido) {
+                        viewModel.agregarUsuario(
+                            username = username,
+                            email = email,
+                            password = password,
+                            fechaNacimiento = if (fechaNacimiento.isNotBlank()) fechaNacimiento else null,
+                            codigoPromocion = if (codigoPromocional.isNotBlank()) codigoPromocional else null
+                        )
+                        username = ""
+                        email = ""
+                        password = ""
+                        confirmarPassword = ""
+                        fechaNacimiento = ""
+                        codigoPromocional = ""
+                        onRegistroExitoso()
+                    }
+                    focusManager.clearFocus()
+                }
+            ),
             supportingText = {
                 if (confirmarPassword.isNotBlank()) {
                     Text(
@@ -263,7 +333,7 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Row (
+        Row(
             modifier = Modifier.fillMaxWidth(0.8f),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
