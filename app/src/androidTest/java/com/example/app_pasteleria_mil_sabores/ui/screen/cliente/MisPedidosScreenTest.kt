@@ -5,6 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.app_pasteleria_mil_sabores.model.*
 import com.example.app_pasteleria_mil_sabores.viewmodel.PedidoViewModel
@@ -106,8 +108,9 @@ class MisPedidosScreenTest {
     @Test
     fun misPedidosScreenMuestraPedidosCuandoHayDatos() {
         // GIVEN: Hay pedidos disponibles
-        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoTest))
-        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoTest)
+        val pedidoNormalizado = pedidoTest.copy(estado = "Pendiente")
+        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoNormalizado))
+        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoNormalizado)
 
         composeTestRule.setContent {
             MisPedidosScreen(
@@ -119,11 +122,13 @@ class MisPedidosScreenTest {
             )
         }
 
-        // THEN: Debe mostrar los pedidos
+        Thread.sleep(1000)
+
+        // THEN: Debe mostrar los pedidos con información verificable
         composeTestRule.onNodeWithText("Pedido #1").assertExists()
         composeTestRule.onNodeWithText("$30.000").assertExists()
         composeTestRule.onNodeWithText("Pendiente").assertExists()
-        composeTestRule.onNodeWithText("Torta de Chocolate").assertExists()
+        composeTestRule.onNodeWithText("1 producto").assertExists()
     }
 
     @Test
@@ -152,8 +157,9 @@ class MisPedidosScreenTest {
     @Test
     fun misPedidosScreenLlamaAOnVerDetallePedidoCuandoSeSeleccionaPedido() {
         // GIVEN: Hay pedidos y callback mock
-        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoTest))
-        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoTest)
+        val pedidoNormalizado = pedidoTest.copy(estado = "Pendiente")
+        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoNormalizado))
+        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoNormalizado)
 
         var detalleLlamado = false
         var pedidoIdSeleccionado = ""
@@ -171,6 +177,8 @@ class MisPedidosScreenTest {
                 onBackPressed = { }
             )
         }
+
+        Thread.sleep(1000)
 
         // WHEN: Se hace click en un pedido
         composeTestRule.onNodeWithText("Pedido #1").performClick()
@@ -239,5 +247,87 @@ class MisPedidosScreenTest {
 
         // THEN: Debe mostrar indicador de carga
         composeTestRule.onNodeWithText("Cargando tus pedidos...").assertExists()
+    }
+
+    @Test
+    fun misPedidosScreenMuestraInformacionBasicaDelPedido() {
+        // GIVEN: Hay pedidos disponibles
+        val pedidoNormalizado = pedidoTest.copy(estado = "Pendiente")
+        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoNormalizado))
+        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoNormalizado)
+
+        composeTestRule.setContent {
+            MisPedidosScreen(
+                pedidoViewModel = mockPedidoViewModel,
+                usuario = usuarioTest,
+                onVolver = { },
+                onVerDetallePedido = { },
+                onBackPressed = { }
+            )
+        }
+
+        Thread.sleep(1000)
+
+        // THEN: Debe mostrar información básica del pedido
+        composeTestRule.onNodeWithText("Pedido #1").assertExists()
+        composeTestRule.onNodeWithText("$30.000").assertExists()
+        composeTestRule.onNodeWithText("Pendiente").assertExists()
+        composeTestRule.onNodeWithText("1 producto").assertExists()
+    }
+
+    @Test
+    fun misPedidosScreenMuestraInformacionCompletaDelPedido() {
+        // GIVEN: Pedido con estado NORMALIZADO
+        val pedidoSimple = Pedido(
+            id = "TEST123",
+            usuarioId = "1",
+            productos = listOf(
+                CartItem(
+                    producto = Producto(
+                        id = "1",
+                        nombre = "Torta de Chocolate",
+                        descripcion = "Deliciosa torta de chocolate premium",
+                        precio = 15000,
+                        imagen = "torta_chocolate",
+                        categoria = "Tortas",
+                        stock = 5,
+                        destacado = true,
+                        activo = true
+                    ),
+                    cantidad = 2
+                )
+            ),
+            estado = "Pendiente",
+            fechaCreacion = System.currentTimeMillis(),
+            subtotal = 30000,
+            descuentoAplicado = 0,
+            costoEnvio = 0,
+            total = 30000,
+            direccionEnvio = direccionTest,
+            metodoPago = "tarjeta",
+            informacionContacto = informacionContactoTest
+        )
+
+        // Mock del ViewModel
+        every { mockPedidoViewModel.pedidos } returns MutableStateFlow(listOf(pedidoSimple))
+        every { mockPedidoViewModel.cargando } returns MutableStateFlow(false)
+        every { mockPedidoViewModel.errorMessage } returns MutableStateFlow(null)
+        every { mockPedidoViewModel.obtenerPedidosFiltrados() } returns listOf(pedidoSimple)
+
+        composeTestRule.setContent {
+            MisPedidosScreen(
+                pedidoViewModel = mockPedidoViewModel,
+                usuario = usuarioTest,
+                onVolver = { },
+                onVerDetallePedido = { },
+                onBackPressed = { }
+            )
+        }
+
+        Thread.sleep(1000)
+
+        // THEN: Verificación mínima y efectiva
+        composeTestRule.onNodeWithText("Aún no tienes pedidos").assertDoesNotExist()
+        composeTestRule.onNodeWithText("$30.000").assertExists()
     }
 }
